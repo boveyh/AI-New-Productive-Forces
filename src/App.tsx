@@ -22,6 +22,12 @@ const cases = [
   { id: 'alphafold-200m', kind: '创造型', title: '打开蛋白质结构空间', statement: 'AI不只加速旧任务，也使过去难以规模化完成的研究成为公共资源。' },
 ]
 
+const industries = [
+  { name: '精准农业', entry: ledger[0], chain: ['识别', '决策', '执行'] },
+  { name: '软件研发', entry: ledger[1], chain: ['生成', '协作', '验证'] },
+  { name: '科学研究', entry: ledger[2], chain: ['预测', '搜索', '实验'] },
+]
+
 const sliderLabels: Array<[keyof ProductivityInputs, string]> = [
   ['investment', 'AI投入强度'],
   ['data', '数据准备度'],
@@ -46,6 +52,7 @@ export function App() {
   const [inputs, setInputs] = useState<ProductivityInputs>({ investment: 0.62, data: 0.42, process: 0.48, training: 0.3 })
   const [riskMode, setRiskMode] = useState<'无治理扩张' | '负责任采用'>('无治理扩张')
   const [augmentation, setAugmentation] = useState(62)
+  const [selectedIndustry, setSelectedIndustry] = useState(0)
   const result = useMemo(() => evaluateProductivity(inputs), [inputs])
 
   useEffect(() => {
@@ -74,7 +81,15 @@ export function App() {
   return (
     <div className="app">
       <Suspense fallback={<div className="scene scene-fallback" aria-hidden="true" />}>
-        <PersistentScene activeChapter={activeChapter} ignited={ignited} productivity={result.index} />
+        <PersistentScene
+          activeChapter={activeChapter}
+          ignited={ignited}
+          productivity={result.index}
+          processMode={processMode}
+          selectedIndustry={selectedIndustry}
+          riskMode={riskMode}
+          augmentation={augmentation}
+        />
       </Suspense>
       <header className="nav-shell">
         <a className="brand" href="#engine">AI生产力引擎</a>
@@ -168,7 +183,7 @@ export function App() {
               )
             })}
           </div>
-          <IndustryExplorer />
+          <IndustryExplorer selected={selectedIndustry} onSelect={setSelectedIndustry} />
         </section>
 
         <section id="lab" className="simulator-section chapter">
@@ -240,21 +255,16 @@ export function App() {
   )
 }
 
-function IndustryExplorer() {
-  const industries = [
-    { name: '精准农业', entry: ledger[0], chain: ['识别', '决策', '执行'] },
-    { name: '软件研发', entry: ledger[1], chain: ['生成', '协作', '验证'] },
-    { name: '科学研究', entry: ledger[2], chain: ['预测', '搜索', '实验'] },
-  ]
-  const [selected, setSelected] = useState(0)
+function IndustryExplorer({ selected, onSelect }: { selected: number; onSelect: (index: number) => void }) {
   const current = industries[selected]
   return (
     <div className="industry-explorer reveal">
       <div className="industry-list" role="listbox" aria-label="行业">
-        {industries.map((industry, index) => <button key={industry.name} role="option" aria-selected={selected === index} onClick={() => setSelected(index)}>{industry.name}</button>)}
+        <span className="industry-list-label">选择行业，点亮能力路径</span>
+        {industries.map((industry, index) => <button key={industry.name} role="option" aria-selected={selected === index} onClick={() => onSelect(index)}>{industry.name}</button>)}
       </div>
       <div className="ability-map">
-        <span>能力关系</span>
+        <span>能力关系 · 3D星图同步响应</span>
         <div>{current.chain.map((item, index) => <span key={item}>{item}{index < current.chain.length - 1 && <ArrowRight />}</span>)}</div>
         <p>{current.entry.claim}</p>
         <EvidenceBadge entry={current.entry} />
