@@ -445,18 +445,23 @@ details small { display: block; color: #e6aa87; margin-top: 12px; }
 .industry-graph { margin-top: 88px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; border: 1px solid var(--line); background: var(--line); }
 .capability-fold, .industry-expansion { min-width: 0; background: var(--surface); padding: clamp(26px, 4vw, 54px); }
 .capability-fold h3 { margin: 12px 0 10px; font-size: clamp(25px, 3.2vw, 40px); letter-spacing: -.045em; }
-.capability-fold > p { max-width: 640px; margin: 0 0 30px; color: var(--muted); line-height: 1.7; }
-.capability-fold-svg { width: 100%; max-width: 420px; overflow: visible; }
+.fold-copy > p { max-width: 640px; margin: 0 0 30px; color: var(--muted); line-height: 1.7; }
+.capability-fold-svg { width: 100%; max-width: 520px; overflow: visible; }
 .capability-fold-svg > path { fill: none; stroke: rgb(236 235 228 / 0.13); stroke-width: 1px; transition: stroke 260ms ease, opacity 260ms ease; }
 .capability-fold-svg > path.is-active { stroke: var(--accent); opacity: .85; }
 .capability-fold-svg circle { fill: var(--bg); stroke: rgb(236 235 228 / .35); stroke-width: 1.5px; transition: fill 260ms ease, stroke 260ms ease; }
-.capability-fold-svg .fold-case.is-active { fill: var(--accent-bright); stroke: var(--accent-bright); }
-.fold-capability text { fill: var(--muted); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 11px; transition: fill 260ms ease; }
+.capability-fold-svg .fold-case.is-active circle { fill: var(--accent-bright); stroke: var(--accent-bright); }
+.fold-case text, .fold-capability text { fill: var(--muted); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 11px; transition: fill 260ms ease; }
+.fold-case.is-active text { fill: var(--text); }
 .fold-capability.is-active circle { fill: rgb(242 106 46 / .22); stroke: var(--accent-bright); stroke-width: 2px; }
 .fold-capability.is-active text { fill: var(--text); }
 .capability-list { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1px; margin: 26px 0 0; padding: 0; border: 1px solid var(--line); background: var(--line); list-style: none; }
-.capability-list li { display: grid; gap: 5px; padding: 14px 12px; background: rgb(8 10 12 / 0.38); transition: background 260ms ease; }
-.capability-list li.is-active { background: rgb(242 106 46 / 0.11); }
+.capability-list li { display: grid; gap: 5px; padding: 14px 12px; background: var(--surface-2); transition: background 260ms ease; }
+/* 格子用不透明底色：列表的分隔线是靠 1px 的 --line 背景透出来的，
+   底色半透明就会把那条白线透上来，六格一起泛灰，橙色高亮也被冲淡。
+   #3e322d 是 accent 12% 叠在分隔线上的合成色，也就是展开区选中页签实际渲染出来的底色 ——
+   折叠和展开是同一件事的两半，选中态就该是同一个颜色。 */
+.capability-list li.is-active { background: #3e322d; }
 .capability-list strong { font-size: 15px; }
 .capability-list small { color: var(--muted); font-size: 10px; }
 .industry-nodes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px; border: 1px solid var(--line); background: var(--line); }
@@ -476,6 +481,26 @@ details small { display: block; color: #e6aa87; margin-top: 12px; }
 .capability-path { display: flex; flex-wrap: wrap; gap: 6px; }
 .capability-path span { padding: 4px 9px; border: 1px solid rgb(242 106 46 / 0.38); border-radius: 999px; color: var(--accent-bright); font-size: 11px; }
 .industry-case > button { display: inline-flex; align-items: center; gap: 7px; margin-top: 4px; padding: 0; color: var(--accent-bright); background: transparent; border: 0; cursor: pointer; font-size: 13px; }
+
+/* ≥1051px：折叠图改双栏。原来的文案 / 图 / 能力表三段竖着叠，图被 max-width 卡在 420px，
+   而这一段有 1100px 宽 —— 图右边空掉三分之二。现在左栏放文案加六张能力卡（2×3），
+   右栏让图按栏宽放大，两栏高度刚好抵平。
+   这段必须排在 .capability-list 的基础规则之后，否则那句 repeat(6, 1fr) 会把它盖掉，
+   六张卡会挤在左栏里各剩 70 多像素宽。
+   用 1051 而不是 1050，和第 610 行的 max-width:1050px 差 1px，避免正好 1050 宽时两边都命中。 */
+@media (min-width: 1051px) {
+  .capability-fold {
+    display: grid;
+    grid-template-columns: minmax(0, 0.88fr) minmax(0, 1.12fr);
+    grid-template-areas: "copy figure" "list figure";
+    column-gap: clamp(40px, 4.4vw, 72px);
+    align-content: start;
+  }
+  .capability-fold > .fold-copy { grid-area: copy; }
+  .capability-fold > .fold-copy > p { margin-bottom: 0; }
+  .capability-fold-svg { grid-area: figure; width: 100%; max-width: none; align-self: start; }
+  .capability-list { grid-area: list; grid-template-columns: repeat(2, 1fr); margin-top: 24px; }
+}
 
 .simulator-section { display: grid; grid-template-columns: minmax(280px, 0.66fr) minmax(560px, 1.2fr); gap: 8vw; align-items: start; }
 .simulator-section > .mechanism-chart { grid-column: 1 / -1; margin-top: 42px; }
