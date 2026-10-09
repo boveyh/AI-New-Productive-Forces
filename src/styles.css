@@ -290,6 +290,7 @@ h1 { margin-bottom: 24px; font-size: clamp(56px, 7vw, 96px); line-height: 0.92; 
 @media (min-width: 1050px) { .process-compare { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; } }
 
 .field-view { display: grid; gap: 22px; padding-top: 26px; }
+.field-view > .segmented { justify-self: start; }
 .field-view.is-compact { gap: 14px; padding-top: 16px; }
 .field-view-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
 .field-view-head h3 { margin: 12px 0 0; font-size: clamp(24px, 3vw, 38px); letter-spacing: -.045em; }

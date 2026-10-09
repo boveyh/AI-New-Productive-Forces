@@ -72,6 +72,10 @@ export function App() {
   const [activeCausal, setActiveCausal] = useState<CausalNodeId>('decision')
   const [ignited, setIgnited] = useState(false)
   const [processMode, setProcessMode] = useState<'传统流程' | 'AI辅助' | '人机协同'>('传统流程')
+  // 开场那块田的喷洒策略。FieldView 自带模式切换，但只在传入 onModeChange 时才渲染，
+  // 而两处调用都没有传 —— 于是标题写着「识别后点喷下的喷杆行为」，
+  // 读者却找不到切换入口。开场这一处补上，流程章那处由该章的流程模式控件负责。
+  const [heroSpray, setHeroSpray] = useState<SprayMode>('spot')
   const [inputs, setInputs] = useState<ProductivityInputs>({ investment: 0.62, data: 0.42, process: 0.48, training: 0.3 })
   // 响应面写入前的一次快照。只记录一档，和预设按钮共用同一条恢复路径，
   // 不引入新的状态机。
@@ -192,7 +196,7 @@ export function App() {
           <DecisionSequence active={ignited} onComplete={handleDecisionComplete} />
           <div className="engine-field reveal">
             <p className="engine-field-lead">把镜头从一株拉到整块田：同一个判断被复制到每一个喷嘴，投入的变化才第一次可见。</p>
-            <FieldView mode="spot" accuracy={0.92} animated={ignited} />
+            <FieldView mode={heroSpray} accuracy={0.92} animated={ignited} onModeChange={setHeroSpray} />
           </div>
         </section>
         <StoryBridge id="decision-task" />
