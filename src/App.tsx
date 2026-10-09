@@ -4,10 +4,13 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { AdoptionStory } from './components/AdoptionStory'
 import { FactorMachine, GovernanceRing, HeroDecisionLine, ProcessCircuit, type FactorFault } from './components/KnowledgeMechanics'
+import { CausalRail, FinalExpansion, RangeInstrument, StoryBridge, StorySpine } from './components/StorySystem'
 import ledgerJson from './data/data-ledger.json'
 import type { LedgerEntry } from './data/ledger-types'
 import type { AdoptionSceneKey } from './model/adoption'
 import { evaluateProductivity, type ProductivityInputs } from './model/productivity'
+import { resolveSliderState } from './model/slider-state'
+import { causalNodes, type CausalNodeId } from './model/story'
 
 const PersistentScene = lazy(() =>
   import('./scene/PersistentScene').then((module) => ({ default: module.PersistentScene })),
@@ -40,11 +43,11 @@ const industries = [
   { name: '科学研究', entry: ledger[2], chain: ['预测', '搜索', '实验'] },
 ]
 
-const sliderLabels: Array<[keyof ProductivityInputs, string]> = [
-  ['investment', 'AI投入强度'],
-  ['data', '数据准备度'],
-  ['process', '流程适配度'],
-  ['training', '人员训练度'],
+const sliderLabels: Array<[keyof ProductivityInputs, string, number]> = [
+  ['investment', 'AI投入强度', 0],
+  ['data', '数据准备度', 1],
+  ['process', '流程适配度', 2],
+  ['training', '人员训练度', 3],
 ]
 
 function EvidenceBadge({ entry }: { entry: LedgerEntry }) {
@@ -59,6 +62,7 @@ function EvidenceBadge({ entry }: { entry: LedgerEntry }) {
 
 export function App() {
   const [activeChapter, setActiveChapter] = useState(0)
+  const [activeCausal, setActiveCausal] = useState<CausalNodeId>('decision')
   const [ignited, setIgnited] = useState(false)
   const [processMode, setProcessMode] = useState<'传统流程' | 'AI辅助' | '人机协同'>('传统流程')
   const [inputs, setInputs] = useState<ProductivityInputs>({ investment: 0.62, data: 0.42, process: 0.48, training: 0.3 })
@@ -70,6 +74,7 @@ export function App() {
   const [intervention, setIntervention] = useState(48)
   const riskMode = governance >= 50 ? '负责任采用' : '无治理扩张'
   const result = useMemo(() => evaluateProductivity(inputs), [inputs])
+  const labState = useMemo(() => resolveSliderState('productivity', result.complementarity * 100, { complementarity: result.complementarity }), [result.complementarity])
 
   useEffect(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -81,12 +86,18 @@ export function App() {
         onToggle: ({ isActive }) => isActive && setActiveChapter(index),
       }),
     )
+    const causalTriggers = causalNodes.map((node) => ScrollTrigger.create({
+      trigger: `#${node.target}`,
+      start: 'top 48%',
+      end: 'bottom 36%',
+      onToggle: ({ isActive }) => isActive && setActiveCausal(node.id),
+    }))
     if (!reduced) {
       gsap.utils.toArray<HTMLElement>('.reveal').forEach((element) => {
         gsap.fromTo(element, { y: 34, opacity: 0 }, { y: 0, opacity: 1, duration: 0.75, ease: 'power3.out', scrollTrigger: { trigger: element, start: 'top 84%', once: true } })
       })
     }
-    return () => triggers.forEach((trigger) => trigger.kill())
+    return () => [...triggers, ...causalTriggers].forEach((trigger) => trigger.kill())
   }, [])
 
   const ignite = () => {
@@ -118,19 +129,22 @@ export function App() {
         <span className="chapter-count">{String(activeChapter + 1).padStart(2, '0')} / {String(chapters.length).padStart(2, '0')}</span>
         <div className="progress" style={{ transform: `scaleX(${(activeChapter + 1) / chapters.length})` }} />
       </header>
+      <CausalRail activeId={activeCausal} />
 
       <main>
+        <StorySpine />
         <section id="engine" className="hero chapter">
           <div className="hero-copy reveal">
-            <p className="eyebrow">一次判断，如何成为生产力</p>
+            <p className="eyebrow">过去靠增加土地、设备和劳动扩大生产。现在，AI开始降低判断成本。</p>
             <h1>喷，还是不喷？</h1>
-            <p className="hero-intro">追踪一个智能决策，看它如何进入流程、扩散到产业，并最终改变人的能力边界。</p>
+            <p className="hero-intro">这不是一个农业问题。我们将追踪这次田间判断，看它如何被复制、进入流程，并最终变成一种新的生产力。</p>
             <button className="primary-button" onClick={ignite}>
               {ignited ? '引擎已启动' : '启动决策引擎'} <ArrowRight weight="bold" />
             </button>
           </div>
           <HeroDecisionLine active={ignited} />
         </section>
+        <StoryBridge id="decision-task" />
 
         <section id="adoption" className="adoption-section chapter" aria-labelledby="adoption-title">
           <div className="section-copy adoption-heading reveal">
@@ -140,14 +154,16 @@ export function App() {
           </div>
           <AdoptionStory scene={adoptionScene} onSceneChange={setAdoptionScene} />
         </section>
+        <StoryBridge id="task-factors" />
 
-        <section className="factor-section chapter" aria-labelledby="factor-title">
+        <section id="factors" className="factor-section chapter" aria-labelledby="factor-title">
           <div className="section-copy reveal">
             <h2 id="factor-title">判断并非凭空出现</h2>
             <p>数据提供现场，算力压缩时间，算法把输入变成可以执行的选择。三者缺一，智能就无法进入生产。</p>
           </div>
           <FactorMachine fault={factorFault} onChange={setFactorFault} />
         </section>
+        <StoryBridge id="factors-process" />
 
         <section id="process" className="process-section chapter">
           <div className="section-copy reveal">
@@ -157,7 +173,7 @@ export function App() {
           <div className="process-lab reveal">
             <div className="segmented" role="group" aria-label="流程模式">
               {(['传统流程', 'AI辅助', '人机协同'] as const).map((mode) => (
-                <button key={mode} aria-pressed={processMode === mode} onClick={() => setProcessMode(mode)}>{mode}</button>
+                <button key={mode} aria-pressed={processMode === mode} onClick={() => { setProcessMode(mode); setIntervention(mode === '传统流程' ? 8 : mode === 'AI辅助' ? 38 : 78) }}>{mode}</button>
               ))}
             </div>
             <ProcessCircuit mode={processMode} intervention={intervention} onIntervention={setIntervention} />
@@ -168,6 +184,7 @@ export function App() {
             </p>
           </div>
         </section>
+        <StoryBridge id="process-results" />
 
         <section id="industry" className="cases-section chapter">
           <div className="section-copy reveal">
@@ -195,6 +212,7 @@ export function App() {
           </div>
           <IndustryExplorer selected={selectedIndustry} onSelect={setSelectedIndustry} />
         </section>
+        <StoryBridge id="results-lab" />
 
         <section id="lab" className="simulator-section chapter">
           <div className="section-copy reveal">
@@ -203,11 +221,8 @@ export function App() {
           </div>
           <div className="simulator reveal">
             <div className="controls">
-              {sliderLabels.map(([key, label]) => (
-                <label key={key}>
-                  <span>{label}<output>{Math.round(inputs[key] * 100)}</output></span>
-                  <input type="range" min="0" max="100" value={inputs[key] * 100} onChange={(event) => setInputs((current) => ({ ...current, [key]: Number(event.target.value) / 100 }))} />
-                </label>
+              {sliderLabels.map(([key, label, dimension]) => (
+                <RangeInstrument key={key} kind="productivity" label={label} value={inputs[key] * 100} params={{ dimension }} compact onChange={(value) => setInputs((current) => ({ ...current, [key]: value / 100 }))} />
               ))}
             </div>
             <div className={`result state-${result.state}`} aria-live="polite">
@@ -218,10 +233,13 @@ export function App() {
                 <li><b>因果位置</b>{result.causalPosition}</li>
                 <li><b>下一步</b>{result.recommendation}</li>
               </ol>
+              <div className="lab-metrics">{Object.entries(labState.metrics).map(([name, value]) => <span key={name}><b>{value}%</b>{name}</span>)}</div>
+              <p className="lab-threshold"><b>{labState.stageName}</b>{labState.explanation}</p>
               <details><summary>查看公式与教学假设</summary><code>C = (D × P × H)^(1/3)<br />指数 = 100 × [1 + 0.45 × I × C - 0.30 × I × (1-C)]</code><p>权重用于教学情景，不是企业预测或经验估计。</p></details>
             </div>
           </div>
         </section>
+        <StoryBridge id="lab-governance" />
 
         <section id="cost" className="risk-section chapter">
           <div className="section-copy reveal">
@@ -244,24 +262,20 @@ export function App() {
             <aside className="energy-note"><Database /><span>现实锚点</span><strong>17%</strong><p>IEA报告的2025年全球数据中心用电需求增幅。</p><EvidenceBadge entry={ledger.find((entry) => entry.id === 'iea-datacentre-17')!} /></aside>
           </div>
         </section>
+        <StoryBridge id="governance-conclusion" />
 
         <section id="conclusion" className="conclusion chapter">
           <div className="conclusion-inner reveal">
             <Leaf weight="duotone" />
             <h2>替代劳动，还是扩展能力？</h2>
             <p>真正的选择不是要不要使用AI，而是让哪些判断自动完成，让哪些责任继续由人承担。</p>
-            <label className="augmentation-control">
-              <span>自动替代</span><input type="range" min="0" max="100" value={augmentation} onChange={(event) => setAugmentation(Number(event.target.value))} /><span>能力增强</span>
-            </label>
-            <div className="network-summary" style={{ '--augmentation': augmentation / 100 } as React.CSSProperties}>
-              <span>{augmentation < 45 ? '网络更简单，效率更高，但创新节点减少。' : '人和AI重新连接，新任务与新协作关系开始出现。'}</span>
-            </div>
-            <blockquote>AI不是天然的生产力。只有进入合适的流程，被人正确使用并受到有效治理，智能能力才会变成可持续的新质生产力。</blockquote>
+            <div className="augmentation-control"><RangeInstrument kind="augmentation" label="从任务替代到能力增强" value={augmentation} onChange={setAugmentation} metricUnits={{ 任务速度: '%' }} /></div>
+            <FinalExpansion />
           </div>
         </section>
       </main>
 
-      <footer><span>AI生产力引擎</span><a href="#engine">返回开场</a><span>数据更新：2026-10-08</span></footer>
+      <footer><span>AI生产力引擎</span><a href="#engine">返回开场</a><span>数据更新：2026-10-09</span></footer>
     </div>
   )
 }

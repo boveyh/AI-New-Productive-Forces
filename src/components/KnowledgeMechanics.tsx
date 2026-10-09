@@ -1,5 +1,7 @@
-import { ArrowBendDownRight, Check, Warning } from '@phosphor-icons/react'
+import { Check } from '@phosphor-icons/react'
 import type { CSSProperties } from 'react'
+import { resolveSliderState } from '../model/slider-state'
+import { RangeInstrument } from './StorySystem'
 
 export function HeroDecisionLine({ active }: { active: boolean }) {
   return <div className={`decision-line ${active ? 'is-active' : ''}`} aria-label="从植物识别到喷洒决策的路径">
@@ -62,18 +64,16 @@ export function ProcessCircuit({ mode, intervention, onIntervention }: { mode: '
       <g className="intervention-node"><line x1={interventionX} x2={interventionX} y1="198" y2="254" /><circle cx={interventionX} cy="226" r="13" /><text x={interventionX} y="286" textAnchor="middle">介入点</text></g>
       {mode === '传统流程' && <g className="wait-nodes">{[245, 435, 625].map((x) => <circle key={x} cx={x} cy="70" r="17" />)}</g>}
     </svg>
-    <label className="intervention-control"><span>拖动AI介入位置</span><input type="range" min="0" max="100" value={intervention} onChange={(event) => onIntervention(Number(event.target.value))} /><output>{intervention}%</output></label>
+    <RangeInstrument kind="ai-position" label="AI介入位置" value={intervention} onChange={onIntervention} metricUnits={{ 等待节点: '个' }} />
     <div className="circuit-legend"><span><i className="solid" />执行路径</span><span><i className="wait" />等待节点</span>{mode === '人机协同' && <span><i className="loop" />反馈闭环</span>}</div>
   </div>
 }
 
 export function GovernanceRing({ value, onChange }: { value: number; onChange: (value: number) => void }) {
-  const speed = Math.round(150 - value * 0.65)
-  const spread = Math.round(94 - value * 0.76)
-  const review = Math.round(8 + value * 0.72)
+  const state = resolveSliderState('governance', value)
   return <div className="governance-mechanism">
     <div className="governance-ring" style={{ '--governance': value / 100 } as CSSProperties} aria-hidden="true">
-      <div className="ring-core"><span>{speed}</span><small>决策/秒</small></div>
+      <div className="ring-core"><span>{state.metrics.决策速度}</span><small>决策/秒</small></div>
       {[0, 1, 2, 3].map((index) => <i key={index} style={{ '--claw': index } as CSSProperties} />)}
       <div className="ring-crack" />
     </div>
@@ -81,10 +81,7 @@ export function GovernanceRing({ value, onChange }: { value: number; onChange: (
       <span className="scene-kicker">MECHANICAL LIMITER</span>
       <h3>给高速系统加上限位</h3>
       <p>治理不是把系统关掉，而是用复核、权限和审计控制错误能传播多远。</p>
-      <label><span>治理约束强度</span><input type="range" min="0" max="100" value={value} onChange={(event) => onChange(Number(event.target.value))} /><output>{value}</output></label>
-      <div className="governance-readout"><span><b>{spread}%</b>错误传播范围</span><span><b>{review}%</b>高影响节点复核</span></div>
-      {value < 35 && <p className="governance-alert"><Warning />速度很高，但错误会沿自动化链条扩散。</p>}
-      {value >= 35 && <p className="governance-alert safe"><ArrowBendDownRight />速度回落，责任节点重新进入回路。</p>}
+      <RangeInstrument kind="governance" label="治理约束强度" value={value} onChange={onChange} metricUnits={{ 决策速度: '/秒' }} />
     </div>
   </div>
 }

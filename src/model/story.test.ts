@@ -1,0 +1,21 @@
+import { describe, expect, it } from 'vitest'
+import { causalNodes, domainPaths, pulseGeometry, pulsePathId, storyBridges } from './story'
+
+describe('continuous story model', () => {
+  it('keeps bridge segments continuous and aligned with causal nodes', () => {
+    for (let index = 0; index < storyBridges.length - 1; index += 1) expect(storyBridges[index].end).toBe(storyBridges[index + 1].start)
+    expect(storyBridges.every((bridge) => causalNodes.some((node) => node.id === bridge.nodeId))).toBe(true)
+  })
+
+  it('uses one pulse path and one split point', () => {
+    expect(pulsePathId).toBe('decision-pulse-path')
+    expect(pulseGeometry.causalNodes).toHaveLength(causalNodes.length)
+    expect(pulseGeometry.causalNodes.at(-1)!.y).toBeLessThan(pulseGeometry.splitPoint.y)
+  })
+
+  it('lets final paths replace only domain-specific fields', () => {
+    expect(domainPaths).toHaveLength(4)
+    expect(new Set(domainPaths.map((path) => path.constraint)).size).toBe(4)
+    expect(domainPaths.every((path) => ['过程侧', '制度侧'].includes(path.constraintSide))).toBe(true)
+  })
+})

@@ -25,6 +25,17 @@ export function percentagePointGap(a: number, b: number) {
   return Math.abs(a - b)
 }
 
+export const rankedSafeArea = { titleBottom: 88, top: 112, bottom: 438, left: 270, right: 808 } as const
+
+export function getRankedLayout(count: number) {
+  const rowGap = count > 4 ? Math.min(48, (rankedSafeArea.bottom - rankedSafeArea.top) / Math.max(1, count - 1)) : 90
+  return { start: rankedSafeArea.top, rowGap, positions: Array.from({ length: count }, (_, index) => rankedSafeArea.top + index * rowGap) }
+}
+
+export function getRankedValueRight(value: number, max: number) {
+  return scaleLinear(value, [0, max], [rankedSafeArea.left, 700]) + 76
+}
+
 export function buildAtomLayout(scene: AdoptionSceneKey, count = 36): Point[] {
   return Array.from({ length: count }, (_, index) => {
     if (scene === 'depth') {
@@ -44,6 +55,6 @@ export function buildAtomLayout(scene: AdoptionSceneKey, count = 36): Point[] {
     }
     const group = index % 7
     const step = Math.floor(index / 7)
-    return { x: 160 + step * 76, y: 77 + group * 55, active: step < 5, group }
+    return { x: 160 + step * 76, y: 112 + group * 46, active: step < 5, group }
   })
 }

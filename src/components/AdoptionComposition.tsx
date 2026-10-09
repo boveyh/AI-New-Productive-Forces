@@ -1,6 +1,6 @@
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from 'remotion'
 import adoptionJson from '../data/adoption-series.json'
-import { adoptionSceneOrder, buildAtomLayout, scaleLinear } from '../model/adoption'
+import { adoptionSceneOrder, buildAtomLayout, getRankedLayout, scaleLinear } from '../model/adoption'
 
 type DepthSeries = { name: string; values: Array<{ year: number; value: number }> }
 type Group = { name: string; value: number }
@@ -53,10 +53,9 @@ function SizeVisual({ progress }: { progress: number }) {
 
 function RankedVisual({ groups, max, progress }: { groups: Group[]; max: number; progress: number }) {
   const x = (value: number) => scaleLinear(value, [0, max], [270, 700])
-  const row = groups.length > 4 ? 55 : 90
-  const start = groups.length > 4 ? 72 : 104
+  const { positions } = getRankedLayout(groups.length)
   return <>{groups.map((group, index) => {
-    const y = start + index * row
+    const y = positions[index]
     const width = (x(group.value) - 270) * progress
     const average = group.name === '欧盟平均'
     return <g key={group.name} opacity={interpolate(progress, [index * 0.07, 0.28 + index * 0.07], [0, 1], { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' })}>
