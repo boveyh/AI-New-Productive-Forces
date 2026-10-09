@@ -6,7 +6,7 @@ import { AdoptionStory } from './components/AdoptionStory'
 import { EvidenceTheater } from './components/EvidenceTheater'
 import { FieldView } from './components/FieldView'
 import { IndustryGraph } from './components/IndustryGraph'
-import { HerbicideSavingChart } from './components/MechanismCharts'
+import { HerbicideSavingChart, ThresholdTradeoffChart } from './components/MechanismCharts'
 import { DecisionSequence, FactorMachine, GovernanceRing, ProcessCircuit, type FactorFault } from './components/KnowledgeMechanics'
 import { CausalRail, FinalExpansion, RangeInstrument, StoryBridge, StorySpine } from './components/StorySystem'
 import ledgerJson from './data/data-ledger.json'
@@ -291,6 +291,7 @@ export function App() {
             </div>
             <aside className="energy-note"><Database /><span>现实锚点</span><strong>17%</strong><p>IEA报告的2025年全球数据中心用电需求增幅。</p><EvidenceBadge entry={ledger.find((entry) => entry.id === 'iea-datacentre-17')!} /></aside>
           </div>
+          <ThresholdTradeoffChart />
         </section>
         <StoryBridge id="governance-conclusion" />
 

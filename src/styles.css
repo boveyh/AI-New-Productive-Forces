@@ -348,6 +348,18 @@ h1 { margin-bottom: 24px; font-size: clamp(56px, 7vw, 96px); line-height: 0.92; 
 .mechanism-evidence .mechanism-caveat { color: #8f969a; font-size: 12px; }
 .mechanism-evidence a { display: inline-flex; align-items: center; gap: 7px; color: var(--accent-bright); text-decoration: none; font-size: 13px; }
 .mechanism-note { margin: 0; color: #7d858a; font-size: 12px; line-height: 1.6; }
+.mechanism-legend .missed { background: var(--accent); }
+.mechanism-legend .false { background: rgb(236 235 228 / .5); }
+.tradeoff-canvas { width: 100%; overflow: visible; }
+.tradeoff-grid { stroke: rgb(236 235 228 / .1); stroke-width: 1; }
+.tradeoff-tick { fill: #70787d; font-family: "IBM Plex Mono", Consolas, monospace; font-size: 11px; }
+.tradeoff-axis { fill: #7d858a; font-size: 11px; }
+.tradeoff-line { fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+.tradeoff-line.is-false { stroke: rgb(236 235 228 / .5); }
+.tradeoff-line.is-missed { stroke: var(--accent); }
+.tradeoff-crossing line { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4 5; }
+.tradeoff-crossing circle { fill: var(--accent-bright); }
+.tradeoff-crossing text { fill: var(--text); font-size: 11px; }
 
 .cases-section > .section-copy { margin-bottom: 68px; }
 .signal-rail { display: grid; grid-template-columns: repeat(4, 1fr); margin: -18px 0 70px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }

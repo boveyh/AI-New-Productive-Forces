@@ -1,8 +1,9 @@
 import { ArrowRight, Warning } from '@phosphor-icons/react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import ledgerJson from '../data/data-ledger.json'
 import type { LedgerEntry } from '../data/ledger-types'
 import { applyMode, buildField, fieldMetrics } from '../model/field'
+import { tradeoffCurve } from '../model/threshold'
 
 const ledger = ledgerJson as LedgerEntry[]
 
@@ -74,5 +75,55 @@ export function HerbicideSavingChart() {
     </div>
 
     <p className="mechanism-note">左侧为教学模拟，右侧为厂商披露的限定场景数据，二者统计对象与口径不同，不作换算。</p>
+  </div>
+}
+
+const accuracyOptions = [0.6, 0.85, 0.95]
+
+export function ThresholdTradeoffChart() {
+  const [accuracy, setAccuracy] = useState(0.85)
+  const curve = useMemo(() => tradeoffCurve({ steps: 41, accuracy }), [accuracy])
+  const crossing = curve.findIndex((point) => point.missedRate >= point.falseRate)
+  const crossPoint = crossing > 0 ? curve[crossing] : null
+  const x = (threshold: number) => 54 + threshold * 376
+  const y = (rate: number) => 248 - rate * 200
+  const line = (pick: (point: (typeof curve)[number]) => number) => curve.map((point) => `${x(point.decisionThreshold)},${y(pick(point))}`).join(' ')
+
+  return <div className="mechanism-chart reveal">
+    <div className="mechanism-head">
+      <span className="scene-kicker">MECHANISM · 误差搬到哪里</span>
+      <h3>提高判定阈值，只是把误差从一边搬到另一边</h3>
+    </div>
+
+    <div className="segmented" role="group" aria-label="识别准确率">
+      {accuracyOptions.map((option) => <button key={option} type="button" aria-pressed={accuracy === option} onClick={() => setAccuracy(option)}>
+        识别准确率 {Math.round(option * 100)}%
+      </button>)}
+    </div>
+
+    <svg className="tradeoff-canvas" viewBox="0 0 460 300" role="img" aria-label={`识别准确率 ${Math.round(accuracy * 100)}% 下，判定阈值从 0 升到 1 时漏喷与误喷的此消彼长。`}>
+      {[0, 0.25, 0.5, 0.75, 1].map((rate) => <g key={rate}>
+        <line className="tradeoff-grid" x1="54" x2="430" y1={y(rate)} y2={y(rate)} />
+        <text className="tradeoff-tick" x="44" y={y(rate) + 4} textAnchor="end">{Math.round(rate * 100)}%</text>
+      </g>)}
+      {[0, 0.5, 1].map((threshold) => <text key={threshold} className="tradeoff-tick" x={x(threshold)} y="270" textAnchor="middle">{threshold.toFixed(1)}</text>)}
+      <text className="tradeoff-axis" x="242" y="292" textAnchor="middle">判定阈值（多高才触发喷洒）</text>
+
+      <polyline className="tradeoff-line is-false" points={line((point) => point.falseRate)} />
+      <polyline className="tradeoff-line is-missed" points={line((point) => point.missedRate)} />
+
+      {crossPoint && <g className="tradeoff-crossing">
+        <line x1={x(crossPoint.decisionThreshold)} x2={x(crossPoint.decisionThreshold)} y1="48" y2="248" />
+        <circle cx={x(crossPoint.decisionThreshold)} cy={y(crossPoint.missedRate)} r="5" />
+        <text x={x(crossPoint.decisionThreshold) + 10} y={y(crossPoint.missedRate) - 12}>这里需要人工复核</text>
+      </g>}
+    </svg>
+
+    <div className="mechanism-legend">
+      <span><i className="missed" />漏喷率</span>
+      <span><i className="false" />误喷率</span>
+    </div>
+
+    <p className="mechanism-note">阈值只能决定误差如何分配，不能把两类误差同时清零。分配不掉的那部分，就是治理章要求保留人工复核的位置。</p>
   </div>
 }
