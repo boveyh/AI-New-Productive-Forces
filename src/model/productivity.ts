@@ -91,3 +91,31 @@ export function evaluateProductivity(raw: ProductivityInputs): ProductivityResul
     recommendation: inputs.data <= inputs.process ? '先治理数据口径和质量，再扩大模型使用范围。' : '先重构任务流程，再增加自动化比例。',
   }
 }
+
+export type SurfacePoint = {
+  investment: number
+  complementarity: number
+  index: number
+}
+
+/**
+ * 在「AI投入强度 × 协同基础」平面上采样有效生产力指数。
+ * 令 data = process = training = C，即可让三者的几何平均恰好等于 C，
+ * 因此纵轴是真正的协同基础，而不是某一个单要素。
+ */
+export function sampleSurface(steps: number): SurfacePoint[] {
+  const size = Math.max(2, Math.floor(steps))
+  const points: SurfacePoint[] = []
+  for (let row = 0; row < size; row += 1) {
+    const complementarity = row / (size - 1)
+    for (let col = 0; col < size; col += 1) {
+      const investment = col / (size - 1)
+      points.push({
+        investment,
+        complementarity,
+        index: evaluateProductivity({ investment, data: complementarity, process: complementarity, training: complementarity }).index,
+      })
+    }
+  }
+  return points
+}

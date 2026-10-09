@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 import ledgerJson from '../data/data-ledger.json'
 import type { LedgerEntry } from '../data/ledger-types'
 import { applyMode, buildField, fieldMetrics } from '../model/field'
+import { sampleSurface } from '../model/productivity'
 import { tradeoffCurve } from '../model/threshold'
 
 const ledger = ledgerJson as LedgerEntry[]
@@ -125,5 +126,70 @@ export function ThresholdTradeoffChart() {
     </div>
 
     <p className="mechanism-note">阈值只能决定误差如何分配，不能把两类误差同时清零。分配不掉的那部分，就是治理章要求保留人工复核的位置。</p>
+  </div>
+}
+
+const surfaceSteps = 20
+const surfaceBox = { left: 64, right: 430, top: 44, bottom: 252 }
+
+function surfaceColor(ratio: number) {
+  const from = [22, 28, 32]
+  const to = [242, 106, 46]
+  const channel = (index: number) => Math.round(from[index] + (to[index] - from[index]) * ratio)
+  return `rgb(${channel(0)} ${channel(1)} ${channel(2)})`
+}
+
+export function ResponseSurfaceChart({ investment, complementarity }: { investment: number; complementarity: number }) {
+  const grid = useMemo(() => sampleSurface(surfaceSteps), [])
+  const bounds = useMemo(() => {
+    const values = grid.map((point) => point.index)
+    return { min: Math.min(...values), max: Math.max(...values) }
+  }, [grid])
+  const span = bounds.max - bounds.min || 1
+  const width = surfaceBox.right - surfaceBox.left
+  const height = surfaceBox.bottom - surfaceBox.top
+  const cellW = width / (surfaceSteps - 1) + 0.8
+  const cellH = height / (surfaceSteps - 1) + 0.8
+  const x = (value: number) => surfaceBox.left + value * width
+  const y = (value: number) => surfaceBox.bottom - value * height
+  const markerX = x(Math.min(1, Math.max(0, investment)))
+  const markerY = y(Math.min(1, Math.max(0, complementarity)))
+
+  return <div className="mechanism-chart reveal">
+    <div className="mechanism-head">
+      <span className="scene-kicker">MECHANISM · 短板能不能被投入买回来</span>
+      <h3>整个投入平面上，有效生产力指数长什么样</h3>
+    </div>
+
+    <svg className="surface-canvas" viewBox="0 0 460 320" role="img" aria-label={`AI投入强度与协同基础构成的响应面。当前投入 ${Math.round(investment * 100)}%，协同基础 ${Math.round(complementarity * 100)}%。`}>
+      {grid.map((point) => <rect
+        key={`${point.investment}-${point.complementarity}`}
+        x={x(point.investment) - cellW / 2}
+        y={y(point.complementarity) - cellH / 2}
+        width={cellW}
+        height={cellH}
+        fill={surfaceColor((point.index - bounds.min) / span)}
+      />)}
+
+      <line className="surface-base-line" x1={surfaceBox.left} x2={surfaceBox.right} y1={y(0.5)} y2={y(0.5)} />
+      <text className="surface-base-label" x={surfaceBox.right - 6} y={y(0.5) - 8} textAnchor="end">协同基础 0.5 · 收益开始超过摩擦</text>
+
+      <circle className="surface-marker" cx={markerX} cy={markerY} r="7" />
+      <circle className="surface-marker-ring" cx={markerX} cy={markerY} r="13" />
+
+      {[0, 0.5, 1].map((tick) => <text key={`x-${tick}`} className="tradeoff-tick" x={x(tick)} y={surfaceBox.bottom + 20} textAnchor="middle">{(tick * 100).toFixed(0)}%</text>)}
+      {[0, 0.5, 1].map((tick) => <text key={`y-${tick}`} className="tradeoff-tick" x={surfaceBox.left - 10} y={y(tick) + 4} textAnchor="end">{(tick * 100).toFixed(0)}%</text>)}
+      <text className="tradeoff-axis" x={(surfaceBox.left + surfaceBox.right) / 2} y="300" textAnchor="middle">AI投入强度</text>
+      <text className="tradeoff-axis" x={surfaceBox.left} y="32">协同基础（数据 × 流程 × 训练）</text>
+    </svg>
+
+    <div className="surface-scale">
+      <span>有效生产力指数</span>
+      <i />
+      <span>{bounds.min.toFixed(0)} → {bounds.max.toFixed(0)}</span>
+      <span className="surface-current"><b />当前位置 · 投入 {Math.round(investment * 100)}% / 协同 {Math.round(complementarity * 100)}%</span>
+    </div>
+
+    <p className="mechanism-note">横轴把投入推到多高，都不能越过协同基础的边界；纵轴低于 0.5 时，投入越多只是把收益变成摩擦。</p>
   </div>
 }

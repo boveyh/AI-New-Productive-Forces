@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { evaluateProductivity } from './productivity'
+import { evaluateProductivity, sampleSurface } from './productivity'
 
 describe('evaluateProductivity', () => {
   it.each([
@@ -20,5 +20,31 @@ describe('evaluateProductivity', () => {
 
   it('clamps inputs to zero and one', () => {
     expect(evaluateProductivity({ investment: 2, data: 2, process: 2, training: 2 }).index).toBe(145)
+  })
+})
+
+describe('sampleSurface', () => {
+  it('returns a square grid', () => {
+    expect(sampleSurface(3)).toHaveLength(9)
+    expect(sampleSurface(20)).toHaveLength(400)
+  })
+
+  it('is deterministic', () => {
+    expect(sampleSurface(10)).toEqual(sampleSurface(10))
+  })
+
+  it('agrees with evaluateProductivity at the grid corners', () => {
+    const surface = sampleSurface(3)
+    const corner = surface.find((point) => point.investment === 1 && point.complementarity === 1)!
+    expect(corner.index).toBe(evaluateProductivity({ investment: 1, data: 1, process: 1, training: 1 }).index)
+    const floor = surface.find((point) => point.investment === 0 && point.complementarity === 0)!
+    expect(floor.index).toBe(100)
+  })
+
+  it('cannot rescue a weak complementarity base by adding investment', () => {
+    const surface = sampleSurface(11)
+    const weakBase = surface.filter((point) => point.complementarity <= 0.4).map((point) => point.index)
+    const strongBase = surface.filter((point) => point.complementarity >= 0.6).map((point) => point.index)
+    expect(Math.max(...weakBase)).toBeLessThan(Math.max(...strongBase))
   })
 })

@@ -6,7 +6,7 @@ import { AdoptionStory } from './components/AdoptionStory'
 import { EvidenceTheater } from './components/EvidenceTheater'
 import { FieldView } from './components/FieldView'
 import { IndustryGraph } from './components/IndustryGraph'
-import { HerbicideSavingChart, ThresholdTradeoffChart } from './components/MechanismCharts'
+import { HerbicideSavingChart, ResponseSurfaceChart, ThresholdTradeoffChart } from './components/MechanismCharts'
 import { DecisionSequence, FactorMachine, GovernanceRing, ProcessCircuit, type FactorFault } from './components/KnowledgeMechanics'
 import { CausalRail, FinalExpansion, RangeInstrument, StoryBridge, StorySpine } from './components/StorySystem'
 import ledgerJson from './data/data-ledger.json'
@@ -268,6 +268,7 @@ export function App() {
               <details><summary>查看公式与教学假设</summary><code>C = (D × P × H)^(1/3)<br />指数 = 100 × [1 + 0.45 × I × C - 0.30 × I × (1-C)]</code><p>权重用于教学情景，不是企业预测或经验估计。</p></details>
             </div>
           </div>
+          <ResponseSurfaceChart investment={inputs.investment} complementarity={result.complementarity} />
         </section>
         <StoryBridge id="lab-governance" />
 
