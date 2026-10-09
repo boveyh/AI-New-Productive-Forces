@@ -14,7 +14,9 @@ import ledgerJson from './data/data-ledger.json'
 import type { LedgerEntry } from './data/ledger-types'
 import type { AdoptionSceneKey } from './model/adoption'
 import { decisionContext } from './model/decision-steps'
+import { evidenceCases } from './model/evidence'
 import type { SprayMode } from './model/field'
+import { industryIndexForCase } from './model/industry'
 import { labPresets, largestChangeKey, matchPreset, type LabPreset } from './model/presets'
 import { evaluateProductivity, type ProductivityInputs } from './model/productivity'
 import { resolveSliderState } from './model/slider-state'
@@ -147,6 +149,16 @@ export function App() {
     setLabRestore(null)
   }
 
+  // 证据剧场和展开区选的是同一件事（五个案例与五个行业一一对应），
+  // 过去却各存一个 state：从剧场选案例时行业页签不动，两半会互相矛盾。
+  // 现在这两个 state 只由这一个函数写。
+  const selectCase = useCallback((caseIndex: number) => {
+    setActiveCase(caseIndex)
+    const item = evidenceCases[caseIndex]
+    const industryIndex = item ? industryIndexForCase(item.id) : -1
+    if (industryIndex >= 0) setSelectedIndustry(industryIndex)
+  }, [])
+
   const handleDecisionComplete = useCallback(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     document.querySelector('#adoption')?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' })
@@ -256,8 +268,8 @@ export function App() {
             })}
           </div>
           <HerbicideSavingChart />
-          <EvidenceTheater active={activeCase} onSelect={setActiveCase} />
-          <IndustryGraph selected={selectedIndustry} onSelect={setSelectedIndustry} onSelectCase={setActiveCase} />
+          <EvidenceTheater active={activeCase} onSelect={selectCase} />
+          <IndustryGraph selected={selectedIndustry} onSelectCase={selectCase} />
         </section>
         <StoryBridge id="results-lab" />
 

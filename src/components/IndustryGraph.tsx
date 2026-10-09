@@ -16,7 +16,7 @@ function capabilityY(index: number) {
   return 30 + index * capabilityRowGap
 }
 
-export function IndustryGraph({ selected, onSelect, onSelectCase }: { selected: number; onSelect: (index: number) => void; onSelectCase: (index: number) => void }) {
+export function IndustryGraph({ selected, onSelectCase }: { selected: number; onSelectCase: (index: number) => void }) {
   const industry = industryNodes[selected]
   const activeCase = evidenceCases.find((candidate) => candidate.id === industry.caseId)!
   const capabilityIndex = useMemo(
@@ -49,7 +49,9 @@ export function IndustryGraph({ selected, onSelect, onSelectCase }: { selected: 
     </div>
     <div className="industry-expansion">
       <div className="industry-nodes" role="tablist" aria-label="从共享能力展开的行业">
-        {industryNodes.map((node, index) => <button key={node.id} role="tab" aria-selected={index === selected} onClick={() => { onSelect(index); onSelectCase(evidenceCases.findIndex((item) => item.id === node.caseId)) }}>
+        {/* 只发一个事件：行业和案例是同一次选择的两个说法，分开写就会漂移。
+            两半的顺序由 industry.test.ts 锁住，所以这里能直接用案例下标。 */}
+        {industryNodes.map((node, index) => <button key={node.id} role="tab" aria-selected={index === selected} onClick={() => onSelectCase(evidenceCases.findIndex((item) => item.id === node.caseId))}>
           <span>{node.name}</span><small>改变{node.outcome}</small>
         </button>)}
       </div>

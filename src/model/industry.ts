@@ -18,3 +18,22 @@ export const industryNodes: IndustryNode[] = [
 ]
 
 export const industryLayers = ['AI在判断什么', '判断嵌入哪个流程节点', '最终改变了什么'] as const
+
+const industryByCase = new Map(industryNodes.map((node) => [node.caseId, node]))
+
+/**
+ * 案例 id → 行业名。
+ *
+ * 折叠图的左列是「五个案例」，但案例在证据模型里只有一长串 id，
+ * 没有可以直接画进图里的短名。行业名正好是四个字、五个各不相同，
+ * 而且它在下方展开区还会再出现一次 —— 折叠前后用同一套名字，
+ * 读者才认得出「折起来的是这五个，展开的还是这五个」。
+ */
+export function industryNameForCase(caseId: string): string | null {
+  return industryByCase.get(caseId)?.name ?? null
+}
+
+/** 案例 id → 行业下标。两处选择要保持同步时用；找不到返回 -1。 */
+export function industryIndexForCase(caseId: string): number {
+  return industryNodes.findIndex((node) => node.caseId === caseId)
+}
