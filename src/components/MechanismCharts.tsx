@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import ledgerJson from '../data/data-ledger.json'
 import type { LedgerEntry } from '../data/ledger-types'
 import { applyMode, buildField, fieldMetrics } from '../model/field'
-import { sampleSurface } from '../model/productivity'
+import { sampleSurface, surfaceThresholds } from '../model/productivity'
 import { tradeoffCurve } from '../model/threshold'
 
 const ledger = ledgerJson as LedgerEntry[]
@@ -186,6 +186,21 @@ const surfaceTickY = surfaceLayout.plotBottom + surfaceLayout.tickGap
 const surfaceAxisY = surfaceLayout.plotBottom + surfaceLayout.axisGap
 const surfaceHeight = surfaceAxisY + surfaceLayout.bottomSlack
 
+/**
+ * 两条参考线。阈值来自评价函数而非字面量，见 `surfaceThresholds` 的注释；
+ * 图注里的百分比也取自这里，避免"线动了、字没动"。
+ * 标签刻意分置线的两侧：两条线只差约 10 个百分点，同侧标注会互相压住。
+ */
+const surfaceThreshold = surfaceThresholds()
+const surfaceInflectionPct = Math.round(surfaceThreshold.inflection * 100)
+const surfaceBalancePct = Math.round(surfaceThreshold.balance * 100)
+const surfaceGapPct = surfaceBalancePct - surfaceInflectionPct
+
+const surfaceLines = [
+  { key: 'is-balance', value: surfaceThreshold.balance, dy: -7, label: `收益 = 摩擦 ${surfaceBalancePct}%` },
+  { key: 'is-inflection', value: surfaceThreshold.inflection, dy: 15, label: `指数拐点 ${surfaceInflectionPct}%` },
+]
+
 function surfaceColor(ratio: number) {
   const from = [22, 28, 32]
   const to = [242, 106, 46]
@@ -225,8 +240,10 @@ export function ResponseSurfaceChart({ investment, complementarity }: { investme
             fill={surfaceColor((point.index - bounds.min) / span)}
           />)}
 
-          <line className="surface-base-line" x1={surfaceLayout.left} x2={surfaceLayout.right} y1={y(0.5)} y2={y(0.5)} />
-          <text className="surface-base-label" x={surfaceLayout.right - 6} y={y(0.5) - 8} textAnchor="end">协同基础 0.5 · 收益开始超过摩擦</text>
+          {surfaceLines.map((line) => <g key={line.key}>
+            <line className={`surface-base-line ${line.key}`} x1={surfaceLayout.left} x2={surfaceLayout.right} y1={y(line.value)} y2={y(line.value)} />
+            <text className={`surface-base-label ${line.key}`} x={surfaceLayout.left + 4} y={y(line.value) + line.dy}>{line.label}</text>
+          </g>)}
 
           <circle className="surface-marker" cx={markerX} cy={markerY} r="7" />
           <circle className="surface-marker-ring" cx={markerX} cy={markerY} r="13" />
@@ -245,7 +262,7 @@ export function ResponseSurfaceChart({ investment, complementarity }: { investme
           <span>{bounds.min.toFixed(0)} → {bounds.max.toFixed(0)}</span>
           <span className="surface-current"><b />当前位置 · 投入 {Math.round(investment * 100)}% / 协同 {Math.round(complementarity * 100)}%</span>
         </div>
-        <p className="mechanism-note">横轴把投入推到多高，都不能越过协同基础的边界；纵轴低于 0.5 时，投入越多只是把收益变成摩擦。</p>
+        <p className="mechanism-note">两条参考线含义不同，必须分开读。{surfaceInflectionPct}% 是配色所依据的<strong>指数</strong>拐点：低于它，增加投入不再提升指数。{surfaceBalancePct}% 是<strong>收益与摩擦</strong>相等的结构平衡点：低于它，摩擦项大于收益项。相差的这 {surfaceGapPct} 个百分点，正是「颜色已经变亮、净收益却仍为负」的区间。</p>
       </aside>
     </div>
   </div>

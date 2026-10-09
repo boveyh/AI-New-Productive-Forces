@@ -21,6 +21,14 @@ export type ProductivityResult = {
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value))
 
+/**
+ * 有效生产力指数里正负两项的权重。
+ *
+ * 导出是为了让响应面的参考线能与评价函数共用同一份权重——否则调整权重后，
+ * 参考线仍指向旧位置，属于静默失真。
+ */
+export const productivityWeights = { gain: 0.45, friction: 0.3 } as const
+
 export function evaluateProductivity(raw: ProductivityInputs): ProductivityResult {
   const inputs = {
     investment: clamp01(raw.investment),
@@ -31,7 +39,7 @@ export function evaluateProductivity(raw: ProductivityInputs): ProductivityResul
   const complementarity = Math.cbrt(inputs.data * inputs.process * inputs.training)
   const gain = inputs.investment * complementarity
   const friction = inputs.investment * (1 - complementarity)
-  const index = 100 * (1 + 0.45 * gain - 0.3 * friction)
+  const index = 100 * (1 + productivityWeights.gain * gain - productivityWeights.friction * friction)
 
   if (inputs.investment < 0.2) {
     return {
@@ -118,4 +126,35 @@ export function sampleSurface(steps: number): SurfacePoint[] {
     }
   }
   return points
+}
+
+/**
+ * 响应面上两个**不同**的阈值。它们相差约 0.1，正是"颜色已经变亮、净收益却仍为负"
+ * 的那段区间——所以在图上必须画两条线，也不能把两个量混为一谈。
+ *
+ * - `inflection`：指数对投入的偏导为零处（配色所依据的量的拐点）。
+ *   index = 100·(1 + g·I·C − f·I·(1−C))，∂index/∂I = 100·(g·C − f·(1−C)) = 0
+ *   ⟹ C = f / (g + f)。**与权重相关**，所以必须由权重算出。
+ * - `balance`：gain 与 friction 相等处（结构收支平衡，与权重无关）。
+ *   直接对评价函数本身二分求根，而不是写 0.5——这样即使日后 gain/friction
+ *   的定义变了，这条线也会跟着走。
+ */
+export function surfaceThresholds(): { inflection: number; balance: number } {
+  const { gain: gainWeight, friction: frictionWeight } = productivityWeights
+  return {
+    inflection: frictionWeight / (gainWeight + frictionWeight),
+    balance: solveGainFrictionBalance(),
+  }
+}
+
+function solveGainFrictionBalance(): number {
+  let low = 0
+  let high = 1
+  for (let step = 0; step < 60; step += 1) {
+    const mid = (low + high) / 2
+    const { gain, friction } = evaluateProductivity({ investment: 1, data: mid, process: mid, training: mid })
+    if (gain >= friction) high = mid
+    else low = mid
+  }
+  return (low + high) / 2
 }

@@ -369,8 +369,13 @@ h1 { margin-bottom: 24px; font-size: clamp(56px, 7vw, 96px); line-height: 0.92; 
 .tradeoff-crossing circle { fill: var(--accent-bright); }
 .tradeoff-crossing text { fill: var(--text); font-size: 11px; }
 .surface-canvas { width: 100%; max-width: 640px; margin-inline: auto; overflow: visible; }
-.surface-base-line { stroke: #ecebe4; stroke-width: 1.2; stroke-dasharray: 5 5; opacity: .5; }
-.surface-base-label { fill: #ecebe4; font-size: 11px; opacity: .78; }
+.surface-base-line { stroke-width: 1.2; stroke-dasharray: 5 5; }
+.surface-base-line.is-inflection { stroke: var(--accent); stroke-dasharray: 5 4; opacity: .9; }
+.surface-base-line.is-balance { stroke: #ecebe4; opacity: .45; }
+.surface-base-label { font-size: 11px; }
+.surface-base-label.is-inflection { fill: var(--accent-bright); }
+.surface-base-label.is-balance { fill: #ecebe4; opacity: .72; }
+.mechanism-note strong { color: var(--text); font-weight: 500; }
 .surface-marker { fill: var(--accent-bright); stroke: #0b0e10; stroke-width: 2; }
 .surface-marker-ring { fill: none; stroke: var(--accent-bright); stroke-width: 1.5; }
 .surface-scale { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; color: var(--muted); font-size: 11px; }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { evaluateProductivity, sampleSurface } from './productivity'
+import { evaluateProductivity, productivityWeights, sampleSurface, surfaceThresholds } from './productivity'
 
 describe('evaluateProductivity', () => {
   it.each([
@@ -46,5 +46,40 @@ describe('sampleSurface', () => {
     const weakBase = surface.filter((point) => point.complementarity <= 0.4).map((point) => point.index)
     const strongBase = surface.filter((point) => point.complementarity >= 0.6).map((point) => point.index)
     expect(Math.max(...weakBase)).toBeLessThan(Math.max(...strongBase))
+  })
+})
+
+describe('surfaceThresholds', () => {
+  const at = (complementarity: number, investment: number) =>
+    evaluateProductivity({ investment, data: complementarity, process: complementarity, training: complementarity })
+
+  it('derives the inflection from the weights instead of hardcoding it', () => {
+    const { inflection } = surfaceThresholds()
+    expect(inflection).toBeCloseTo(
+      productivityWeights.friction / (productivityWeights.gain + productivityWeights.friction),
+      12,
+    )
+  })
+
+  it('places the inflection where the index stops falling as investment rises', () => {
+    const { inflection } = surfaceThresholds()
+    const delta = (c: number) => at(c, 1).index - at(c, 0).index
+    expect(Math.abs(delta(inflection))).toBeLessThan(1e-9)
+    expect(delta(inflection - 0.05)).toBeLessThan(0)
+    expect(delta(inflection + 0.05)).toBeGreaterThan(0)
+  })
+
+  it('places the balance where gain meets friction', () => {
+    const { balance } = surfaceThresholds()
+    const onLine = at(balance, 1)
+    expect(onLine.gain).toBeCloseTo(onLine.friction, 12)
+    expect(at(balance - 0.05, 1).gain).toBeLessThan(at(balance - 0.05, 1).friction)
+  })
+
+  it('keeps the two thresholds distinct and ordered', () => {
+    const { inflection, balance } = surfaceThresholds()
+    expect(balance).toBeCloseTo(0.5, 12)
+    expect(inflection).toBeCloseTo(0.4, 12)
+    expect(inflection).toBeLessThan(balance)
   })
 })
