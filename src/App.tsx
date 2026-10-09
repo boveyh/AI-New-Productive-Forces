@@ -4,6 +4,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { AdoptionStory } from './components/AdoptionStory'
 import { EvidenceTheater } from './components/EvidenceTheater'
+import { FieldView } from './components/FieldView'
 import { IndustryGraph } from './components/IndustryGraph'
 import { DecisionSequence, FactorMachine, GovernanceRing, ProcessCircuit, type FactorFault } from './components/KnowledgeMechanics'
 import { CausalRail, FinalExpansion, RangeInstrument, StoryBridge, StorySpine } from './components/StorySystem'
@@ -11,6 +12,7 @@ import ledgerJson from './data/data-ledger.json'
 import type { LedgerEntry } from './data/ledger-types'
 import type { AdoptionSceneKey } from './model/adoption'
 import { decisionContext } from './model/decision-steps'
+import type { SprayMode } from './model/field'
 import { labPresets, largestChangeKey, matchPreset, type LabPreset } from './model/presets'
 import { evaluateProductivity, type ProductivityInputs } from './model/productivity'
 import { resolveSliderState } from './model/slider-state'
@@ -25,6 +27,12 @@ gsap.registerPlugin(ScrollTrigger)
 const ledger = ledgerJson as LedgerEntry[]
 const chapterIds = chapterOrder
 const chapters = chapterOrder.map((id) => chapterLabels[id])
+
+const processSprayMode: Record<'传统流程' | 'AI辅助' | '人机协同', SprayMode> = {
+  传统流程: 'blanket',
+  AI辅助: 'spot',
+  人机协同: 'collaborative',
+}
 
 const macroSignals = [
   { id: 'miit-ai-enterprises-4500', value: '4,500+', label: '中国AI企业' },
@@ -160,6 +168,10 @@ export function App() {
             </button>
           </div>
           <DecisionSequence active={ignited} onComplete={handleDecisionComplete} />
+          <div className="engine-field reveal">
+            <p className="engine-field-lead">把镜头从一株拉到整块田：同一个判断被复制到每一个喷嘴，投入的变化才第一次可见。</p>
+            <FieldView mode="spot" accuracy={0.92} animated={ignited} />
+          </div>
         </section>
         <StoryBridge id="decision-task" />
 
@@ -193,7 +205,10 @@ export function App() {
                 <button key={mode} aria-pressed={processMode === mode} onClick={() => { setProcessMode(mode); setIntervention(mode === '传统流程' ? 8 : mode === 'AI辅助' ? 38 : 78) }}>{mode}</button>
               ))}
             </div>
-            <ProcessCircuit mode={processMode} intervention={intervention} onIntervention={setIntervention} />
+            <div className="process-compare">
+              <FieldView mode={processSprayMode[processMode]} accuracy={0.85} />
+              <ProcessCircuit mode={processMode} intervention={intervention} onIntervention={setIntervention} />
+            </div>
             <p className="process-note">
               {processMode === '传统流程' && '先观察区域，再对整个区域统一喷洒；复核与反馈集中在作业之后。'}
               {processMode === 'AI辅助' && 'AI提供杂草识别结果，但执行与复核仍集中在流程末端。'}
