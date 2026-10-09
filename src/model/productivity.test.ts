@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { evaluateProductivity, productivityWeights, sampleSurface, surfaceThresholds } from './productivity'
+import { evaluateProductivity, productivityWeights, sampleAt, sampleSurface, surfaceThresholds } from './productivity'
 
 describe('evaluateProductivity', () => {
   it.each([
@@ -46,6 +46,27 @@ describe('sampleSurface', () => {
     const weakBase = surface.filter((point) => point.complementarity <= 0.4).map((point) => point.index)
     const strongBase = surface.filter((point) => point.complementarity >= 0.6).map((point) => point.index)
     expect(Math.max(...weakBase)).toBeLessThan(Math.max(...strongBase))
+  })
+})
+
+describe('sampleAt', () => {
+  it('agrees with sampleSurface at the same resolution', () => {
+    const surface = sampleSurface(10)
+    for (const point of surface) {
+      expect(sampleAt(point.investment, point.complementarity).index).toBe(point.index)
+    }
+  })
+
+  it('clamps outside the unit square', () => {
+    expect(sampleAt(-1, 2).investment).toBe(0)
+    expect(sampleAt(-1, 2).complementarity).toBe(1)
+    expect(sampleAt(-1, 2).index).toBe(evaluateProductivity({ investment: 0, data: 1, process: 1, training: 1 }).index)
+  })
+
+  it('carries the full evaluation so the readout can show gain and friction', () => {
+    const sample = sampleAt(0.6, 0.3)
+    expect(sample.result).toEqual(evaluateProductivity({ investment: 0.6, data: 0.3, process: 0.3, training: 0.3 }))
+    expect(sample.result.gain).toBeLessThan(sample.result.friction)
   })
 })
 

@@ -106,6 +106,8 @@ export type SurfacePoint = {
   index: number
 }
 
+export type SurfaceSample = SurfacePoint & { result: ProductivityResult }
+
 /**
  * 在「AI投入强度 × 协同基础」平面上采样有效生产力指数。
  * 令 data = process = training = C，即可让三者的几何平均恰好等于 C，
@@ -126,6 +128,30 @@ export function sampleSurface(steps: number): SurfacePoint[] {
     }
   }
   return points
+}
+
+/**
+ * 响应面上的单点查询，供交互读数使用。
+ *
+ * 与 `sampleSurface` 走同一条评价路径：令 data = process = training = C，
+ * 于是几何平均恰好等于 C，和色块用的是同一个指数。这样交互读数与背景
+ * 不会各算一套、给出两个数字。
+ */
+export function sampleAt(investment: number, complementarity: number): SurfaceSample {
+  const nextInvestment = clamp01(investment)
+  const nextComplementarity = clamp01(complementarity)
+  const result = evaluateProductivity({
+    investment: nextInvestment,
+    data: nextComplementarity,
+    process: nextComplementarity,
+    training: nextComplementarity,
+  })
+  return {
+    investment: nextInvestment,
+    complementarity: nextComplementarity,
+    index: result.index,
+    result,
+  }
 }
 
 /**
