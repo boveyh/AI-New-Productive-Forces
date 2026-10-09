@@ -1,6 +1,6 @@
 import { ArrowRight, CheckCircle, Pause, Play } from '@phosphor-icons/react'
-import { Player, type PlayerRef } from '@remotion/player'
-import { useEffect, useRef, useState } from 'react'
+import type { PlayerRef } from '@remotion/player'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import adoptionJson from '../data/adoption-series.json'
 import ledgerJson from '../data/data-ledger.json'
 import type { LedgerEntry } from '../data/ledger-types'
@@ -13,7 +13,8 @@ import {
   scaleLinear,
   type AdoptionSceneKey,
 } from '../model/adoption'
-import { AdoptionComposition } from './AdoptionComposition'
+
+const AdoptionPlayer = lazy(() => import('./AdoptionPlayer').then((module) => ({ default: module.AdoptionPlayer })))
 
 type DepthValue = { year: number; value: number }
 type DepthSeries = { name: string; values: DepthValue[] }
@@ -90,6 +91,8 @@ export function AdoptionStory({ scene, onSceneChange }: { scene: AdoptionSceneKe
   const internalSeekFrame = useRef<number | null>(null)
   const [timeMode, setTimeMode] = useState<'scroll' | 'manual'>('scroll')
   const [playing, setPlaying] = useState(false)
+  const [playerReady, setPlayerReady] = useState(false)
+  const [playerMounted, setPlayerMounted] = useState(false)
   const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const queryQuality = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('quality') : null
   const [renderMode, setRenderMode] = useState<30 | 15 | 'static'>(reducedMotion ? 'static' : queryQuality === 'low' ? 15 : 30)
@@ -107,6 +110,19 @@ export function AdoptionStory({ scene, onSceneChange }: { scene: AdoptionSceneKe
       : scene === 'technology'
         ? '文本分析领先，说明AI最先进入语言密集、可拆分的日常任务。'
         : '最高与最低国家相差 8 倍，扩散不是一条均匀上升的曲线。'
+
+  useEffect(() => {
+    const root = rootRef.current
+    if (!root || staticMode) return
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setPlayerReady(true)
+        observer.disconnect()
+      }
+    }, { rootMargin: '500px 0px' })
+    observer.observe(root)
+    return () => observer.disconnect()
+  }, [staticMode])
 
   useEffect(() => {
     if (staticMode || queryQuality === 'high') return
@@ -175,7 +191,7 @@ export function AdoptionStory({ scene, onSceneChange }: { scene: AdoptionSceneKe
       player.removeEventListener('timeupdate', onTimeUpdate)
       window.removeEventListener('scroll', onScroll)
     }
-  }, [durationInFrames, framesPerScene, onSceneChange, scene, staticMode, timeMode])
+  }, [durationInFrames, framesPerScene, onSceneChange, playerMounted, scene, staticMode, timeMode])
 
   const selectScene = (key: AdoptionSceneKey) => {
     onSceneChange(key)
@@ -212,10 +228,10 @@ export function AdoptionStory({ scene, onSceneChange }: { scene: AdoptionSceneKe
           <button onClick={() => selectScene(adoptionSceneOrder[(adoptionSceneOrder.indexOf(scene) + 1) % adoptionSceneOrder.length])}>换一个坐标系 <ArrowRight /></button>
         </div>
         <div className="adoption-chart" role="group" aria-label={`${sceneData.title}。${insight}`}>
-          {staticMode ? <svg viewBox="0 0 840 500" aria-hidden="true">
+          {staticMode || !playerReady ? <svg viewBox="0 0 840 500" aria-hidden="true">
               <g className="data-atoms">{atoms.map((point, index) => <g key={index} style={{ transform: `translate(${point.x}px, ${point.y}px)` }}><circle r={point.active ? 2.8 : 1.7} fill={colors[point.group % colors.length]} opacity={point.active ? 0.15 : 0.05} /></g>)}</g>
               {scene === 'depth' && <DepthChart />}{scene === 'size' && <SizeChart />}{scene === 'technology' && <RankedChart groups={data.technology.groups} max={14} />}{scene === 'country' && <RankedChart groups={data.country.groups} max={45} />}
-            </svg> : <Player ref={playerRef} component={AdoptionComposition} durationInFrames={durationInFrames} compositionWidth={840} compositionHeight={500} fps={fps} controls loop style={{ width: '100%', aspectRatio: '840 / 500' }} acknowledgeRemotionLicense />}
+            </svg> : <Suspense fallback={<div className="player-loading">正在加载时间轴…</div>}><AdoptionPlayer ref={playerRef} durationInFrames={durationInFrames} fps={fps} onReady={() => setPlayerMounted(true)} /></Suspense>}
           <div className="timeline-owner">
             <span className={timeMode === 'scroll' ? 'active' : ''}>滚动主线</span><i />
             <span className={timeMode === 'manual' ? 'active' : ''}>{playing ? <Pause /> : <Play />} 手动时间轴</span>

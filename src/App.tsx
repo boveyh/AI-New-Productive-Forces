@@ -3,6 +3,7 @@ import { ArrowRight, CheckCircle, Database, Gauge, Leaf, Warning } from '@phosph
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { AdoptionStory } from './components/AdoptionStory'
+import { FactorMachine, GovernanceRing, HeroDecisionLine, ProcessCircuit, type FactorFault } from './components/KnowledgeMechanics'
 import ledgerJson from './data/data-ledger.json'
 import type { LedgerEntry } from './data/ledger-types'
 import type { AdoptionSceneKey } from './model/adoption'
@@ -22,6 +23,15 @@ const cases = [
   { id: 'deere-see-spray-77', kind: '节约型', title: '只对杂草喷洒', statement: '识别从整片田地缩小到单株植物，材料投入随决策精度下降。' },
   { id: 'github-copilot-55-8', kind: '增效型', title: '缩短指定开发任务', statement: '生成能力进入编码流程，把人的注意力移向验证、架构与需求。' },
   { id: 'alphafold-200m', kind: '创造型', title: '打开蛋白质结构空间', statement: 'AI不只加速旧任务，也使过去难以规模化完成的研究成为公共资源。' },
+  { id: 'nber-support-14', kind: '传递型', title: '把优秀经验送到一线', statement: '客服现场研究显示，生成式AI像一个实时教练，经验较少的员工获益更明显。' },
+  { id: 'wef-guizhou-tire-68', kind: '重构型', title: '让质量数据回到生产现场', statement: '检测、排产与工艺优化形成反馈回路，生产率提升来自整条流程而不只是一项工具。' },
+]
+
+const macroSignals = [
+  { id: 'miit-ai-enterprises-4500', value: '4,500+', label: '中国AI企业' },
+  { id: 'cnnic-genai-users-602m', value: '6.02亿', label: '中国生成式AI用户' },
+  { id: 'ifr-china-robots-295k', value: '29.5万', label: '中国工业机器人新增安装' },
+  { id: 'eurostat-ai-depth-2025', value: '20.0%', label: '欧盟企业AI采用率' },
 ]
 
 const industries = [
@@ -52,10 +62,13 @@ export function App() {
   const [ignited, setIgnited] = useState(false)
   const [processMode, setProcessMode] = useState<'传统流程' | 'AI辅助' | '人机协同'>('传统流程')
   const [inputs, setInputs] = useState<ProductivityInputs>({ investment: 0.62, data: 0.42, process: 0.48, training: 0.3 })
-  const [riskMode, setRiskMode] = useState<'无治理扩张' | '负责任采用'>('无治理扩张')
+  const [governance, setGovernance] = useState(18)
   const [augmentation, setAugmentation] = useState(62)
   const [selectedIndustry, setSelectedIndustry] = useState(0)
   const [adoptionScene, setAdoptionScene] = useState<AdoptionSceneKey>('depth')
+  const [factorFault, setFactorFault] = useState<FactorFault>('none')
+  const [intervention, setIntervention] = useState(48)
+  const riskMode = governance >= 50 ? '负责任采用' : '无治理扩张'
   const result = useMemo(() => evaluateProductivity(inputs), [inputs])
 
   useEffect(() => {
@@ -78,7 +91,8 @@ export function App() {
 
   const ignite = () => {
     setIgnited(true)
-    document.querySelector('#adoption')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.setTimeout(() => document.querySelector('#adoption')?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' }), reduced ? 0 : 900)
   }
 
   return (
@@ -115,12 +129,7 @@ export function App() {
               {ignited ? '引擎已启动' : '启动决策引擎'} <ArrowRight weight="bold" />
             </button>
           </div>
-          <div className="hero-question reveal">
-            <span>毫秒级判断</span>
-            <strong>作物</strong>
-            <i>或</i>
-            <strong>杂草</strong>
-          </div>
+          <HeroDecisionLine active={ignited} />
         </section>
 
         <section id="adoption" className="adoption-section chapter" aria-labelledby="adoption-title">
@@ -137,17 +146,7 @@ export function App() {
             <h2 id="factor-title">判断并非凭空出现</h2>
             <p>数据提供现场，算力压缩时间，算法把输入变成可以执行的选择。三者缺一，智能就无法进入生产。</p>
           </div>
-          <div className="factor-grid reveal">
-            {[
-              ['数据', '看见发生了什么', '质量决定判断上限'],
-              ['算力', '在流程允许的时间内处理', '速度决定能否行动'],
-              ['算法', '把输入转化为选择', '适配决定结果是否可靠'],
-            ].map(([name, action, consequence], index) => (
-              <article key={name} className="factor" style={{ '--delay': `${index * 0.08}s` } as React.CSSProperties}>
-                <span>{name}</span><h3>{action}</h3><p>{consequence}</p>
-              </article>
-            ))}
-          </div>
+          <FactorMachine fault={factorFault} onChange={setFactorFault} />
         </section>
 
         <section id="process" className="process-section chapter">
@@ -161,14 +160,7 @@ export function App() {
                 <button key={mode} aria-pressed={processMode === mode} onClick={() => setProcessMode(mode)}>{mode}</button>
               ))}
             </div>
-            <div className={`pipeline mode-${processMode}`}>
-              {['发现问题', '形成方案', '执行任务', '检查结果'].map((step, index) => (
-                <div className="pipeline-step" key={step}>
-                  <span>{String(index + 1).padStart(2, '0')}</span><strong>{step}</strong>
-                  {processMode !== '传统流程' && index < 3 && <i aria-hidden="true" />}
-                </div>
-              ))}
-            </div>
+            <ProcessCircuit mode={processMode} intervention={intervention} onIntervention={setIntervention} />
             <p className="process-note">
               {processMode === '传统流程' && '信息逐级传递，等待与返工集中在阶段之间。'}
               {processMode === 'AI辅助' && 'AI缩短局部任务，但人仍在流程末端集中复核。'}
@@ -179,8 +171,14 @@ export function App() {
 
         <section id="industry" className="cases-section chapter">
           <div className="section-copy reveal">
-            <h2>生产力有三个层次</h2>
-            <p>从节约投入，到加快旧任务，再到创造过去无法规模化完成的新任务。</p>
+            <h2>生产力不止一种结果</h2>
+            <p>它可以节约投入、加快任务、传递经验、重构流程，也可以创造过去无法规模化完成的新任务。</p>
+          </div>
+          <div className="signal-rail reveal" aria-label="AI扩散的四个现实锚点">
+            {macroSignals.map((signal) => {
+              const entry = ledger.find((item) => item.id === signal.id)!
+              return <a key={signal.id} href={entry.sourceUrl} target="_blank" rel="noreferrer"><strong>{signal.value}</strong><span>{signal.label}</span><small>{entry.year} · {entry.geography}</small></a>
+            })}
           </div>
           <div className="case-stack">
             {cases.map((item, index) => {
@@ -232,8 +230,9 @@ export function App() {
           </div>
           <div className="risk-switch reveal">
             <div className="segmented" role="group" aria-label="治理情景">
-              {(['无治理扩张', '负责任采用'] as const).map((mode) => <button key={mode} aria-pressed={riskMode === mode} onClick={() => setRiskMode(mode)}>{mode}</button>)}
+              {(['无治理扩张', '负责任采用'] as const).map((mode) => <button key={mode} aria-pressed={riskMode === mode} onClick={() => setGovernance(mode === '无治理扩张' ? 18 : 74)}>{mode}</button>)}
             </div>
+            <GovernanceRing value={governance} onChange={setGovernance} />
             <div className="risk-grid">
               {[
                 ['岗位任务', riskMode === '无治理扩张' ? '替代先于培训' : '先拆解任务，再设计协作'],
