@@ -253,6 +253,15 @@ const conclusionPositions: Record<CausalNodeId, [number, number, number]> = {
 const conclusionStagger = 150
 
 /**
+ * 星图的整体放大倍数。
+ *
+ * 结论章的文字是居中的，星图原本全部落在屏幕正中，正好被正文压住，
+ * 加上场景遮罩左浓右淡，读起来就像「结尾没有星图」。放大到这里之后
+ * 两端的节点被推到正文两侧的留白里，六个点才能连成一个环。
+ */
+const conclusionScale = 1.22
+
+/**
  * 结论章的星图：节点与总结表的 6 个环节一一对应，但只负责收束感。
  *
  * 这里刻意**不绑定任何指针或键盘事件**——高亮只由总结表的 hover / focus 单向驱动。
@@ -260,7 +269,7 @@ const conclusionStagger = 150
  */
 function ConclusionNetwork({ focusIndex }: { focusIndex: number | null }) {
   const group = useRef<THREE.Group>(null)
-  const targetScale = useMemo(() => new THREE.Vector3(1, 1, 1), [])
+  const targetScale = useMemo(() => new THREE.Vector3(conclusionScale, conclusionScale, conclusionScale), [])
   const invalidate = useThree((state) => state.invalidate)
   // 减少动效下直接全亮：frameloop 会切到 demand，逐帧累积的渐变只会停在半亮。
   const [litCount, setLitCount] = useState(reducedMotion ? causalNodes.length : 0)
@@ -287,26 +296,27 @@ function ConclusionNetwork({ focusIndex }: { focusIndex: number | null }) {
   })
 
   return (
-    <group ref={group} position={[0, 0.2, -0.65]}>
+    // 减少动效时直接给终值：frameloop 会切到 demand，逐帧累积的 lerp 只会停在放大过程中。
+    <group ref={group} position={[0, 0.15, -0.65]} scale={reducedMotion ? conclusionScale : 1}>
       {causalNodes.map((node, index) => {
         const position = conclusionPositions[node.id]
         const focused = focusIndex === index
         const active = index < litCount || focused
         return (
           <group key={node.id}>
-            <Line points={[[0, 0, 0], position]} color={active ? orange : neutral} transparent opacity={active ? 0.2 + ((index + 1) / causalNodes.length) * 0.36 : 0.07} lineWidth={focused ? 1.5 : 0.7} />
+            <Line points={[[0, 0, 0], position]} color={active ? orange : neutral} transparent opacity={active ? 0.3 + ((index + 1) / causalNodes.length) * 0.44 : 0.08} lineWidth={focused ? 1.8 : 1} />
             <mesh position={position}>
-              <sphereGeometry args={[focused ? 0.14 : active ? 0.095 : 0.055, 14, 14]} />
-              <meshBasicMaterial color={active ? orangeBright : '#596167'} transparent opacity={active ? 0.88 : 0.28} />
+              <sphereGeometry args={[focused ? 0.18 : active ? 0.125 : 0.07, 18, 18]} />
+              <meshBasicMaterial color={active ? orangeBright : '#596167'} transparent opacity={active ? 0.98 : 0.3} />
             </mesh>
             {focused && <mesh position={position} rotation={[Math.PI / 2, 0, 0]}>
-              <torusGeometry args={[0.27, 0.009, 8, 56]} />
-              <meshBasicMaterial color={orangeBright} transparent opacity={0.85} />
+              <torusGeometry args={[0.34, 0.012, 8, 56]} />
+              <meshBasicMaterial color={orangeBright} transparent opacity={0.9} />
             </mesh>}
           </group>
         )
       })}
-      {fullyLit && <Sparkles count={26} scale={[5.4, 3.8, 1.6]} size={1.9} speed={0.3} color={orangeBright} opacity={0.72} />}
+      {fullyLit && <Sparkles count={34} scale={[5.8, 4, 1.8]} size={2.3} speed={0.3} color={orangeBright} opacity={0.85} />}
     </group>
   )
 }
@@ -334,7 +344,7 @@ export function PersistentScene(props: SceneProps) {
   const quality = new URLSearchParams(window.location.search).get('quality')
   const dpr: [number, number] = quality === 'high' ? [1.5, 2] : quality === 'low' ? [0.75, 1] : [1, 1.5]
   return (
-    <div className="scene" aria-hidden="true">
+    <div className={`scene scene-${props.chapterId}`} aria-hidden="true">
       {/* R3F 会在自己的容器上写死 `pointer-events: auto`，把外层 .scene 的 none 顶掉，
           于是整块 1440×900 的透明画布会在空白处吃掉指针事件。星图不承担任何操作语义，
           所以这里显式按回去；顺带让「星图侧无交互」从约定变成 DOM 事实。 */}

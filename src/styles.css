@@ -37,6 +37,9 @@ body::before {
 .scene { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
 .scene-fallback { background: radial-gradient(circle at 72% 34%, rgb(242 106 46 / 0.15), transparent 12%); }
 .scene::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgb(8 10 12 / 0.94) 0%, rgb(8 10 12 / 0.58) 46%, rgb(8 10 12 / 0.08) 100%); }
+/* 结论章的遮罩单独放松一档。上一条渐变是为了让左栏正文压得住背景，
+   但结论章是居中排版、星图恰好落在正中，按原浓度整圈节点都会被吃掉。 */
+.scene-conclusion::after { background: linear-gradient(90deg, rgb(8 10 12 / 0.88) 0%, rgb(8 10 12 / 0.46) 52%, rgb(8 10 12 / 0.04) 100%); }
 
 .nav-shell {
   position: fixed;
@@ -589,10 +592,12 @@ blockquote { max-width: 820px; margin: 0 auto; font-size: clamp(25px, 3.2vw, 43p
 .summary-anchor a { color: var(--accent); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 13px; text-decoration: none; border-bottom: 1px solid rgb(242 106 46 / .35); }
 .summary-anchor-empty { color: #596167; font-family: "IBM Plex Mono", Consolas, monospace; cursor: help; }
 
+/* 三条收束结论改用居中。上面是一张左对齐的表格，这里换排版是为了把最后三句
+   和表格区分开：表格是信息载体，这三句是结论，读起来不该像表格的续行。 */
 .summary-takeaways { margin-top: 54px; }
-.summary-takeaways blockquote { max-width: none; display: grid; grid-template-columns: 90px 1fr; gap: 26px; margin: 0; padding: 36px 0; border-top: 1px solid var(--line); font-size: clamp(24px, 3vw, 40px); text-align: left; }
-.summary-takeaways blockquote span { padding-top: 8px; color: var(--accent); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 11px; letter-spacing: 0; }
-.summary-takeaways blockquote.is-current span { display: flex; align-items: center; gap: 7px; color: var(--accent-bright); }
+.summary-takeaways blockquote { max-width: 960px; margin: 0 auto; padding: 38px 0; border-top: 1px solid var(--line); font-size: clamp(23px, 2.8vw, 36px); line-height: 1.4; letter-spacing: -.03em; text-align: center; text-wrap: balance; }
+.summary-takeaways blockquote span { display: flex; justify-content: center; align-items: center; gap: 7px; margin-bottom: 16px; color: var(--accent); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 11px; letter-spacing: .08em; }
+.summary-takeaways blockquote.is-current span { color: var(--accent-bright); }
 .summary-takeaways blockquote.is-current span::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-bright); }
 
 footer { min-height: 100px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; padding: 0 4vw; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
@@ -628,6 +633,9 @@ footer span:last-child { justify-self: end; }
 
 @media (max-width: 767px) {
   .scene::after { background: linear-gradient(180deg, rgb(8 10 12 / 0.25), rgb(8 10 12 / 0.92) 48%, var(--bg) 75%); }
+  /* 窄屏原来在 75% 以下是全不透明的，星图正中那一圈整好落在这个区间里。
+     结论章单独留出可见范围，否则结尾在任何手机上都不会有星图。 */
+  .scene-conclusion::after { background: linear-gradient(180deg, rgb(8 10 12 / 0.3), rgb(8 10 12 / 0.58) 44%, rgb(8 10 12 / 0.86) 78%); }
   .nav-shell { height: 58px; padding-inline: 18px; }
   .causal-rail { top: 58px; min-height: 42px; padding: 5px 18px; }.causal-steps a { font-size: 9px; }.causal-steps a svg { margin-inline: 5px; }
   .brand { font-size: 14px; }
@@ -718,7 +726,7 @@ footer span:last-child { justify-self: end; }
   .summary-table tbody th { padding: 0 0 10px; border-bottom: 0; }
   .summary-table tbody td { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 0; }
   .summary-table tbody td::before { content: attr(data-label); color: var(--muted); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 10px; }
-  .summary-takeaways { margin-top: 40px; }.summary-takeaways blockquote { grid-template-columns: 1fr; gap: 8px; }
+  .summary-takeaways { margin-top: 40px; }.summary-takeaways blockquote { padding: 28px 0; font-size: 21px; line-height: 1.5; }.summary-takeaways blockquote span { margin-bottom: 12px; }
   footer { grid-template-columns: 1fr auto; }
   footer span:last-child { display: none; }
 }
