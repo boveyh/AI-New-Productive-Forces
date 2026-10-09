@@ -445,6 +445,9 @@ details small { display: block; color: #e6aa87; margin-top: 12px; }
 .industry-graph { margin-top: 88px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1px; border: 1px solid var(--line); background: var(--line); }
 .capability-fold, .industry-expansion { min-width: 0; background: var(--surface); padding: clamp(26px, 4vw, 54px); }
 .capability-fold h3 { margin: 12px 0 10px; font-size: clamp(25px, 3.2vw, 40px); letter-spacing: -.045em; }
+/* 双栏之后这一行只有 ~460px，14 个字必然折行；不加这条会断成
+   「五个案例先折叠为六种共享 / 能力」，「能力」两个字单独掉到第二行。 */
+.fold-copy h3 { text-wrap: balance; }
 .fold-copy > p { max-width: 640px; margin: 0 0 30px; color: var(--muted); line-height: 1.7; }
 .capability-fold-svg { width: 100%; max-width: 520px; overflow: visible; }
 .capability-fold-svg > path { fill: none; stroke: rgb(236 235 228 / 0.13); stroke-width: 1px; transition: stroke 260ms ease, opacity 260ms ease; }
