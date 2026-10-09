@@ -368,7 +368,8 @@ h1 { margin-bottom: 24px; font-size: clamp(56px, 7vw, 96px); line-height: 0.92; 
 .tradeoff-crossing line { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 4 5; }
 .tradeoff-crossing circle { fill: var(--accent-bright); }
 .tradeoff-crossing text { fill: var(--text); font-size: 11px; }
-.surface-canvas { width: 100%; max-width: 640px; margin-inline: auto; overflow: visible; }
+.surface-canvas { width: 100%; max-width: 640px; margin-inline: auto; overflow: visible; cursor: crosshair; }
+.surface-canvas:focus-visible { outline: 1px solid var(--accent); outline-offset: 6px; }
 .surface-base-line { stroke-width: 1.2; stroke-dasharray: 5 5; }
 .surface-base-line.is-inflection { stroke: var(--accent); stroke-dasharray: 5 4; opacity: .9; }
 .surface-base-line.is-balance { stroke: #ecebe4; opacity: .45; }
@@ -378,10 +379,21 @@ h1 { margin-bottom: 24px; font-size: clamp(56px, 7vw, 96px); line-height: 0.92; 
 .mechanism-note strong { color: var(--text); font-weight: 500; }
 .surface-marker { fill: var(--accent-bright); stroke: #0b0e10; stroke-width: 2; }
 .surface-marker-ring { fill: none; stroke: var(--accent-bright); stroke-width: 1.5; }
-.surface-scale { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; color: var(--muted); font-size: 11px; }
-.surface-scale i { width: 140px; height: 10px; border-radius: 5px; background: linear-gradient(90deg, rgb(22 28 32), var(--accent)); }
-.surface-current { display: inline-flex; align-items: center; gap: 7px; color: var(--text); }
-.surface-current b { width: 11px; height: 11px; border-radius: 50%; background: var(--accent-bright); }
+.surface-scale { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: var(--muted); font-size: 11px; }
+.surface-scale i { flex: 1 1 80px; min-width: 64px; height: 10px; border-radius: 5px; background: linear-gradient(90deg, rgb(22 28 32), var(--accent)); }
+/* 读数面板：交互读数与背景色块同源（见 sampleAt），所以这里的数字与图上颜色不会打架。 */
+.surface-readout { display: grid; gap: 12px; }
+.surface-readout-tag { justify-self: start; padding: 3px 10px; border: 1px solid rgb(242 106 46 / .42); border-radius: 999px; color: var(--accent-bright); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 11px; }
+.surface-readout-grid { display: grid; gap: 7px; }
+.surface-readout-grid > span { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; }
+.surface-readout-grid b { color: var(--text); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 14px; font-weight: 500; }
+/* 点击后果必须在点击之前就可见，所以它是常驻行，不是事后提示。 */
+.surface-hint { margin: 0; color: #8f969a; font-size: 12px; line-height: 1.6; }
+.surface-restore { justify-self: start; padding: 7px 13px; border: 1px solid rgb(242 106 46 / .42); border-radius: 999px; background: transparent; color: var(--accent-bright); font-size: 12px; line-height: 1.4; text-align: left; cursor: pointer; transition: background 200ms ease; }
+.surface-restore:hover { background: rgb(242 106 46 / .12); }
+/* 预览点（空心 + 虚线准星）与写入点（实心，见 .surface-marker）刻意视觉可分。 */
+.surface-preview line { stroke: var(--accent-bright); stroke-width: 1; stroke-dasharray: 3 3; opacity: .75; }
+.surface-preview circle { fill: none; stroke: var(--accent-bright); stroke-width: 2; }
 
 .cases-section > .section-copy { margin-bottom: 68px; }
 .signal-rail { display: grid; grid-template-columns: repeat(4, 1fr); margin: -18px 0 70px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }

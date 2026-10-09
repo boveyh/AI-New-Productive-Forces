@@ -1,9 +1,10 @@
 import { ArrowRight, Warning } from '@phosphor-icons/react'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import ledgerJson from '../data/data-ledger.json'
 import type { LedgerEntry } from '../data/ledger-types'
 import { applyMode, buildField, fieldMetrics } from '../model/field'
-import { sampleSurface, surfaceThresholds } from '../model/productivity'
+import { sampleAt, sampleSurface, surfaceThresholds } from '../model/productivity'
+import type { ProductivityResult } from '../model/productivity'
 import { tradeoffCurve } from '../model/threshold'
 
 const ledger = ledgerJson as LedgerEntry[]
@@ -208,19 +209,99 @@ function surfaceColor(ratio: number) {
   return `rgb(${channel(0)} ${channel(1)} ${channel(2)})`
 }
 
-export function ResponseSurfaceChart({ investment, complementarity }: { investment: number; complementarity: number }) {
+const surfaceClamp = (value: number) => Math.min(1, Math.max(0, value))
+const surfaceStep = 0.05
+const surfaceReadoutId = 'surface-readout'
+
+type SurfacePreview = { investment: number; complementarity: number }
+
+export function ResponseSurfaceChart({
+  investment,
+  complementarity,
+  result,
+  onApply,
+  onRestore,
+  canRestore,
+}: {
+  investment: number
+  complementarity: number
+  result: ProductivityResult
+  onApply: (investment: number, complementarity: number) => void
+  onRestore: () => void
+  canRestore: boolean
+}) {
   const grid = useMemo(() => sampleSurface(surfaceSteps), [])
   const bounds = useMemo(() => {
     const values = grid.map((point) => point.index)
     return { min: Math.min(...values), max: Math.max(...values) }
   }, [grid])
+  const [preview, setPreview] = useState<SurfacePreview | null>(null)
+  const canvasRef = useRef<SVGSVGElement>(null)
   const span = bounds.max - bounds.min || 1
   const cellW = surfacePlotWidth / (surfaceSteps - 1) + 0.8
   const cellH = surfacePlotHeight / (surfaceSteps - 1) + 0.8
   const x = (value: number) => surfaceLayout.left + value * surfacePlotWidth
   const y = (value: number) => surfaceLayout.plotBottom - value * surfacePlotHeight
-  const markerX = x(Math.min(1, Math.max(0, investment)))
-  const markerY = y(Math.min(1, Math.max(0, complementarity)))
+
+  const written = { investment: surfaceClamp(investment), complementarity: surfaceClamp(complementarity) }
+  // 预览点一定落在响应面上（三个组织条件相等），可以用 sampleAt；
+  // 但"当前设置"下三者可以不等，状态可能因此不同，所以必须用真实的 result，
+  // 否则读数会和滑杆区的结论打架。
+  const previewSample = preview ? sampleAt(preview.investment, preview.complementarity) : null
+  const readout = previewSample
+    ? {
+        investment: previewSample.investment,
+        complementarity: previewSample.complementarity,
+        index: previewSample.index,
+        gain: previewSample.result.gain,
+        friction: previewSample.result.friction,
+        label: previewSample.result.label,
+      }
+    : {
+        investment: written.investment,
+        complementarity: written.complementarity,
+        index: result.index,
+        gain: result.gain,
+        friction: result.friction,
+        label: result.label,
+      }
+
+  // 只依赖 clientX / clientY，因此指针事件与点击事件可以共用同一套换算。
+  const readFromPointer = (event: { clientX: number; clientY: number }) => {
+    const canvas = canvasRef.current
+    if (!canvas) return null
+    // 必须用 getBoundingClientRect 换算。画布被 CSS 缩放，offsetX/offsetY 的
+    // 单位与 viewBox 不一致，直接拿来做坐标会与色块错位。
+    const rect = canvas.getBoundingClientRect()
+    if (rect.width === 0 || rect.height === 0) return null
+    const px = ((event.clientX - rect.left) / rect.width) * surfaceLayout.width
+    const py = ((event.clientY - rect.top) / rect.height) * surfaceHeight
+    return {
+      investment: surfaceClamp((px - surfaceLayout.left) / surfacePlotWidth),
+      complementarity: surfaceClamp((surfaceLayout.plotBottom - py) / surfacePlotHeight),
+    }
+  }
+
+  const handleKeyDown = (event: React.KeyboardEvent<SVGSVGElement>) => {
+    const base = preview ?? written
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      onApply(base.investment, base.complementarity)
+      return
+    }
+    let next: SurfacePreview
+    if (event.key === 'ArrowRight') next = { ...base, investment: surfaceClamp(base.investment + surfaceStep) }
+    else if (event.key === 'ArrowLeft') next = { ...base, investment: surfaceClamp(base.investment - surfaceStep) }
+    else if (event.key === 'ArrowUp') next = { ...base, complementarity: surfaceClamp(base.complementarity + surfaceStep) }
+    else if (event.key === 'ArrowDown') next = { ...base, complementarity: surfaceClamp(base.complementarity - surfaceStep) }
+    else if (event.key === 'Home') next = { investment: 0, complementarity: 0 }
+    else if (event.key === 'End') next = { investment: 1, complementarity: 1 }
+    else return
+    event.preventDefault()
+    setPreview(next)
+  }
+
+  const pct = (value: number) => `${Math.round(value * 100)}%`
 
   return <div className="mechanism-chart reveal">
     <div className="mechanism-head">
@@ -230,7 +311,22 @@ export function ResponseSurfaceChart({ investment, complementarity }: { investme
 
     <div className="mechanism-split">
       <div className="mechanism-canvas-col">
-        <svg className="surface-canvas" viewBox={`0 0 ${surfaceLayout.width} ${surfaceHeight}`} role="img" aria-label={`AI投入强度与协同基础构成的响应面。当前投入 ${Math.round(investment * 100)}%，协同基础 ${Math.round(complementarity * 100)}%。`}>
+        <svg
+          ref={canvasRef}
+          className="surface-canvas"
+          viewBox={`0 0 ${surfaceLayout.width} ${surfaceHeight}`}
+          role="img"
+          tabIndex={0}
+          aria-describedby={surfaceReadoutId}
+          aria-label={`AI投入强度与协同基础构成的响应面。可交互：移动指针或用方向键查看任意一点，回车把该点写入模拟器。当前投入 ${pct(written.investment)}，协同基础 ${pct(written.complementarity)}。`}
+          onPointerMove={(event) => setPreview(readFromPointer(event))}
+          onPointerLeave={() => setPreview(null)}
+          onClick={(event) => {
+            const point = readFromPointer(event)
+            if (point) onApply(point.investment, point.complementarity)
+          }}
+          onKeyDown={handleKeyDown}
+        >
           {grid.map((point) => <rect
             key={`${point.investment}-${point.complementarity}`}
             x={x(point.investment) - cellW / 2}
@@ -245,24 +341,43 @@ export function ResponseSurfaceChart({ investment, complementarity }: { investme
             <text className={`surface-base-label ${line.key}`} x={surfaceLayout.left + 4} y={y(line.value) + line.dy}>{line.label}</text>
           </g>)}
 
-          <circle className="surface-marker" cx={markerX} cy={markerY} r="7" />
-          <circle className="surface-marker-ring" cx={markerX} cy={markerY} r="13" />
+          {preview && <g className="surface-preview" aria-hidden="true">
+            <line x1={x(preview.investment)} x2={x(preview.investment)} y1={surfaceLayout.plotTop} y2={surfaceLayout.plotBottom} />
+            <line x1={surfaceLayout.left} x2={surfaceLayout.right} y1={y(preview.complementarity)} y2={y(preview.complementarity)} />
+            <circle cx={x(preview.investment)} cy={y(preview.complementarity)} r="6" />
+          </g>}
+
+          <circle className="surface-marker" cx={x(written.investment)} cy={y(written.complementarity)} r="7" />
+          <circle className="surface-marker-ring" cx={x(written.investment)} cy={y(written.complementarity)} r="13" />
 
           {[0, 0.5, 1].map((tick) => <text key={`x-${tick}`} className="tradeoff-tick" x={x(tick)} y={surfaceTickY} textAnchor="middle">{(tick * 100).toFixed(0)}%</text>)}
           {[0, 0.5, 1].map((tick) => <text key={`y-${tick}`} className="tradeoff-tick" x={surfaceLayout.left - 10} y={y(tick) + 4} textAnchor="end">{(tick * 100).toFixed(0)}%</text>)}
           <text className="tradeoff-axis" x={surfaceLayout.left + surfacePlotWidth / 2} y={surfaceAxisY} textAnchor="middle">AI投入强度</text>
           <text className="tradeoff-axis" x={surfaceLayout.left} y={surfaceLayout.titleY}>协同基础（数据 × 流程 × 训练）</text>
         </svg>
+
+        <p className="mechanism-note">两条参考线含义不同，必须分开读。{surfaceInflectionPct}% 是配色所依据的<strong>指数</strong>拐点：低于它，增加投入不再提升指数。{surfaceBalancePct}% 是<strong>收益与摩擦</strong>相等的结构平衡点：低于它，摩擦项大于收益项。相差的这 {surfaceGapPct} 个百分点，正是「颜色已经变亮、净收益却仍为负」的区间。</p>
       </div>
 
       <aside className="mechanism-side">
-        <div className="surface-scale">
-          <span>有效生产力指数</span>
-          <i />
-          <span>{bounds.min.toFixed(0)} → {bounds.max.toFixed(0)}</span>
-          <span className="surface-current"><b />当前位置 · 投入 {Math.round(investment * 100)}% / 协同 {Math.round(complementarity * 100)}%</span>
+        <div className="surface-readout" id={surfaceReadoutId} aria-live="polite">
+          <span className="surface-readout-tag">{preview ? '预览点' : '当前设置'}</span>
+          <div className="surface-scale">
+            <span>有效生产力指数</span>
+            <i />
+            <span>{bounds.min.toFixed(0)} → {bounds.max.toFixed(0)}</span>
+          </div>
+          <div className="surface-readout-grid">
+            <span><b>{pct(readout.investment)}</b>投入</span>
+            <span><b>{pct(readout.complementarity)}</b>协同基础</span>
+            <span><b>{readout.index.toFixed(1)}</b>有效生产力指数</span>
+            <span><b>{readout.gain.toFixed(2)}</b>收益 gain</span>
+            <span><b>{readout.friction.toFixed(2)}</b>摩擦 friction</span>
+            <span><b>{readout.label}</b>状态</span>
+          </div>
         </div>
-        <p className="mechanism-note">两条参考线含义不同，必须分开读。{surfaceInflectionPct}% 是配色所依据的<strong>指数</strong>拐点：低于它，增加投入不再提升指数。{surfaceBalancePct}% 是<strong>收益与摩擦</strong>相等的结构平衡点：低于它，摩擦项大于收益项。相差的这 {surfaceGapPct} 个百分点，正是「颜色已经变亮、净收益却仍为负」的区间。</p>
+        <p className="surface-hint">点击（或聚焦后按回车）= 把 data / process / training 统一设为该点的协同基础值。</p>
+        {canRestore && <button type="button" className="surface-restore" onClick={onRestore}>已写入模拟器 · 点此恢复到点击前</button>}
       </aside>
     </div>
   </div>

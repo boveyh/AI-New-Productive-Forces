@@ -72,6 +72,9 @@ export function App() {
   const [ignited, setIgnited] = useState(false)
   const [processMode, setProcessMode] = useState<'传统流程' | 'AI辅助' | '人机协同'>('传统流程')
   const [inputs, setInputs] = useState<ProductivityInputs>({ investment: 0.62, data: 0.42, process: 0.48, training: 0.3 })
+  // 响应面写入前的一次快照。只记录一档，和预设按钮共用同一条恢复路径，
+  // 不引入新的状态机。
+  const [labRestore, setLabRestore] = useState<ProductivityInputs | null>(null)
   const [governance, setGovernance] = useState(18)
   const [augmentation, setAugmentation] = useState(62)
   const [selectedIndustry, setSelectedIndustry] = useState(0)
@@ -119,7 +122,21 @@ export function App() {
     const key = largestChangeKey(inputs, preset.inputs)
     const delta = Math.round((preset.inputs[key] - inputs[key]) * 100)
     setInputs(preset.inputs)
+    setLabRestore(null)
     setPresetNote(`主要调整 ${inputNames[key]} ${delta >= 0 ? '+' : ''}${delta} → ${preset.label}`)
+  }
+
+  /** 点击响应面：把该点的投入与协同基础写进模拟器。 */
+  const applySurfacePoint = (investment: number, complementarity: number) => {
+    setLabRestore(inputs)
+    setInputs({ investment, data: complementarity, process: complementarity, training: complementarity })
+    setPresetNote(null)
+  }
+
+  const restoreLabInputs = () => {
+    if (!labRestore) return
+    setInputs(labRestore)
+    setLabRestore(null)
   }
 
   const handleDecisionComplete = useCallback(() => {
@@ -250,7 +267,7 @@ export function App() {
             </div>
             <div className="controls">
               {sliderLabels.map(([key, label, dimension]) => (
-                <RangeInstrument key={key} kind="productivity" label={label} value={inputs[key] * 100} params={{ dimension }} compact onChange={(value) => setInputs((current) => ({ ...current, [key]: value / 100 }))} />
+                <RangeInstrument key={key} kind="productivity" label={label} value={inputs[key] * 100} params={{ dimension }} compact onChange={(value) => { setLabRestore(null); setInputs((current) => ({ ...current, [key]: value / 100 })) }} />
               ))}
             </div>
             <div className={`result state-${result.state}`} aria-live="polite">
@@ -268,7 +285,14 @@ export function App() {
               <details><summary>查看公式与教学假设</summary><code>C = (D × P × H)^(1/3)<br />指数 = 100 × [1 + 0.45 × I × C - 0.30 × I × (1-C)]</code><p>权重用于教学情景，不是企业预测或经验估计。</p></details>
             </div>
           </div>
-          <ResponseSurfaceChart investment={inputs.investment} complementarity={result.complementarity} />
+          <ResponseSurfaceChart
+            investment={inputs.investment}
+            complementarity={result.complementarity}
+            result={result}
+            onApply={applySurfacePoint}
+            onRestore={restoreLabInputs}
+            canRestore={labRestore !== null}
+          />
         </section>
         <StoryBridge id="lab-governance" />
 
