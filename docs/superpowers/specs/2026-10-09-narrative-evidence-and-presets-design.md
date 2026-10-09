@@ -55,6 +55,8 @@
 
 失败后果不只作为警告文案出现，而要形成一次可见的“成本回流”：失败节点的脉冲转为灰白色，沿原路径反向回到人工处理节点，并依次出现“重新观察”“重新判断”“重新操作”等短促辅助文字；成功状态下，脉冲保持橙色并继续向喷嘴推进。由此明确：判断成本下降不是某一步简单替代了人，而是观察、判断和执行组成的完整链条能够低成本重复。任何一步失效，需要人重新接管，成本就重新回到生产过程。
 
+人工处理节点固定在判断区域右下方的主路径外侧，视觉上使用一个简化的“手动复核台”：细线方框、Phosphor图标库的`UserFocus`图标和“人工复核”文字组成同一个低对比节点。四步动作共享这一节点，只有发生失败或用户主动查看失败路径时才提高亮度；成功状态下保持隐藏。它不与因果状态条或四步动作节点重合，也不计入主因果链，避免被理解成第七个因果节点。
+
 动态辅助文字只在状态变化时出现，每次不超过十个汉字，不与主标题同时争夺视觉中心；减少动态效果模式下改为节点旁的静态说明。
 
 ### 3.3 从一次判断到判断流
@@ -172,6 +174,18 @@
 
 证据剧场与行业关系图承担不同层次的任务：证据剧场证明五个真实案例分别改变了什么；行业关系图把案例暂时收束为识别、预测、生成、决策、执行和复核等共享能力，解释相似的低成本判断为何在不同任务约束下产生不同结果。转场时，五个案例的流程线先折叠为共享能力节点，再重新连接到行业，而不是重新出现第二组案例卡片。
 
+折叠动画使用固定的六个共享能力节点：`识别、预测、生成、决策、执行、复核`。每个案例至少连接其中两项，流程线沿当前案例路径回收后落到这些固定坐标，再从共享节点向行业展开。能力名称和顺序只在一份常量表中定义，证据剧场、行业关系图与折叠动画共同消费，不建立第二套能力分类。
+
+首批案例映射固定为：
+
+| 案例 | 共享能力节点 |
+| --- | --- |
+| See & Spray精准喷洒 | 识别、决策、执行、复核 |
+| GitHub Copilot受控任务 | 生成、执行、复核 |
+| NBER客服现场研究 | 生成、决策、复核 |
+| 贵州轮胎灯塔案例 | 识别、预测、决策、执行、复核 |
+| AlphaFold数据库 | 预测、生成、复核 |
+
 选择行业后显示三层：
 
 1. AI在判断什么；
@@ -252,10 +266,15 @@ type DecisionStep = {
   failure: string
   humanFallback: string
   causalNode: 'decision'
+  humanFallbackNodeId: typeof humanFallbackNodeId
 }
 ```
 
-`causalNode`固定为`decision`，避免四步在代码中演变成四条独立因果线。
+```ts
+export const humanFallbackNodeId = 'human-review-station' as const
+```
+
+`causalNode`固定为`decision`，四步的`humanFallbackNodeId`固定指向同一个外围节点，避免在代码中演变成四条独立因果线或四个人工节点。`humanFallbackNodeId`不得出现在主因果链节点常量中。
 
 ### 10.2 案例数据
 
@@ -266,6 +285,7 @@ type EvidenceCase = {
   id: string
   layer: 'saving' | 'speed' | 'transfer' | 'restructure' | 'creation'
   causalNodes: Array<'task' | 'process' | 'results'>
+  capabilities: SharedCapability[]
   before: string
   aiDecision: string
   processChange: string
@@ -274,6 +294,15 @@ type EvidenceCase = {
   ledgerId: string
 }
 ```
+
+共享能力使用唯一常量表：
+
+```ts
+export const sharedCapabilities = ['识别', '预测', '生成', '决策', '执行', '复核'] as const
+type SharedCapability = (typeof sharedCapabilities)[number]
+```
+
+每个案例的`capabilities`至少包含两项，所有值必须来自`sharedCapabilities`。
 
 来源、年份、地域、统计口径和限制继续从`data-ledger.json`读取，不重复维护。
 
@@ -301,6 +330,7 @@ type LabPreset = {
 - 精准农业案例在要素、流程和结果章节都有明确回指；
 - 农业案例完成结果闭环后才扩展到其他行业。
 - 四步判断动作共享“判断成本下降”节点；任一步失败时都能看到处理成本回流到人工节点，而不是四段互不相关的动画。
+- 四步失败路径的终点必须是同一个`humanFallbackNodeId`，且该ID不属于主因果链节点集合；成功路径不激活人工处理节点。
 
 ### 11.2 案例验收
 
@@ -309,6 +339,7 @@ type LabPreset = {
 - 不同口径数据不共享排名轴；
 - 企业披露与有限证据状态保持可见。
 - 五个案例的`layer`必须映射到“AI进入任务、流程重构、结果改变”中的至少一个节点，并按任务进入深度排列；不允许加入无法解释其因果位置的案例。
+- 五个案例的能力映射必须来自同一份`sharedCapabilities`常量，每个案例至少映射两项；折叠动画与行业关系图不得自行声明能力名称或顺序。
 - 页面级不可比声明只出现一次，单个案例默认不展开长篇限制说明。
 
 ### 11.3 预设验收
