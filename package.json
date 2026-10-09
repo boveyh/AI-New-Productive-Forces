@@ -15,9 +15,11 @@
     "@phosphor-icons/react": "^2.1.10",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
+    "@remotion/player": "^4.0.534",
     "gsap": "^3.15.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
+    "remotion": "^4.0.534",
     "three": "^0.186.1"
   },
   "devDependencies": {

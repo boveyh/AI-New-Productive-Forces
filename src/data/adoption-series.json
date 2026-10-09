@@ -1,0 +1,47 @@
+{
+  "depth": {
+    "ledgerId": "eurostat-ai-depth-2025",
+    "title": "采用在增长，但深度并不相同",
+    "note": "同一家企业可能使用一种或多种AI技术。技术种类越多，通常意味着AI进入了更多任务环节。",
+    "series": [
+      { "name": "至少一种", "values": [{ "year": 2023, "value": 8.1 }, { "year": 2024, "value": 13.5 }, { "year": 2025, "value": 20.0 }] },
+      { "name": "至少两种", "values": [{ "year": 2023, "value": 4.1 }, { "year": 2024, "value": 7.8 }, { "year": 2025, "value": 13.0 }] },
+      { "name": "至少三种", "values": [{ "year": 2023, "value": 2.1 }, { "year": 2024, "value": 4.3 }, { "year": 2025, "value": 8.3 }] }
+    ]
+  },
+  "size": {
+    "ledgerId": "eurostat-ai-size-2025",
+    "title": "扩散速度，取决于组织有没有吸收能力",
+    "note": "大型企业更容易同时承担数据治理、算力采购、流程改造与人员培训，因此采用率显著领先。",
+    "groups": [
+      { "name": "小型企业", "value2024": 11.21, "value2025": 17.00 },
+      { "name": "中型企业", "value2024": 20.97, "value2025": 30.36 },
+      { "name": "大型企业", "value2024": 41.17, "value2025": 55.03 }
+    ]
+  },
+  "technology": {
+    "ledgerId": "eurostat-ai-technology-2025",
+    "title": "企业先从可嵌入的任务开始",
+    "note": "2025年的采用集中在文本与内容处理。不同技术类型可以同时使用，因此比例不可相加。",
+    "groups": [
+      { "name": "文本分析", "value": 11.8 },
+      { "name": "图像/视频/音频生成", "value": 9.5 },
+      { "name": "文本/语音生成", "value": 8.8 },
+      { "name": "语音转机器可读格式", "value": 7.2 }
+    ]
+  },
+  "country": {
+    "ledgerId": "eurostat-ai-country-2025",
+    "title": "同一项技术，落在不同的生产土壤里",
+    "note": "国家差异不是一场简单的技术排名，它还映射产业结构、企业规模和数字基础设施。",
+    "groups": [
+      { "name": "丹麦", "value": 42.03 },
+      { "name": "芬兰", "value": 37.82 },
+      { "name": "瑞典", "value": 35.04 },
+      { "name": "欧盟平均", "value": 19.95 },
+      { "name": "保加利亚", "value": 8.55 },
+      { "name": "波兰", "value": 8.36 },
+      { "name": "罗马尼亚", "value": 5.21 }
+    ]
+  }
+}

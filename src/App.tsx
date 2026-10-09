@@ -2,8 +2,10 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { ArrowRight, CheckCircle, Database, Gauge, Leaf, Warning } from '@phosphor-icons/react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { AdoptionStory } from './components/AdoptionStory'
 import ledgerJson from './data/data-ledger.json'
 import type { LedgerEntry } from './data/ledger-types'
+import type { AdoptionSceneKey } from './model/adoption'
 import { evaluateProductivity, type ProductivityInputs } from './model/productivity'
 
 const PersistentScene = lazy(() =>
@@ -13,8 +15,8 @@ const PersistentScene = lazy(() =>
 gsap.registerPlugin(ScrollTrigger)
 
 const ledger = ledgerJson as LedgerEntry[]
-const chapters = ['引擎', '重构', '产业', '实验室', '代价', '结论']
-const chapterIds = ['engine', 'process', 'industry', 'lab', 'cost', 'conclusion']
+const chapters = ['引擎', '扩散', '重构', '产业', '实验室', '代价', '结论']
+const chapterIds = ['engine', 'adoption', 'process', 'industry', 'lab', 'cost', 'conclusion']
 
 const cases = [
   { id: 'deere-see-spray-77', kind: '节约型', title: '只对杂草喷洒', statement: '识别从整片田地缩小到单株植物，材料投入随决策精度下降。' },
@@ -53,6 +55,7 @@ export function App() {
   const [riskMode, setRiskMode] = useState<'无治理扩张' | '负责任采用'>('无治理扩张')
   const [augmentation, setAugmentation] = useState(62)
   const [selectedIndustry, setSelectedIndustry] = useState(0)
+  const [adoptionScene, setAdoptionScene] = useState<AdoptionSceneKey>('depth')
   const result = useMemo(() => evaluateProductivity(inputs), [inputs])
 
   useEffect(() => {
@@ -75,14 +78,14 @@ export function App() {
 
   const ignite = () => {
     setIgnited(true)
-    document.querySelector('#process')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
+    document.querySelector('#adoption')?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })
   }
 
   return (
     <div className="app">
       <Suspense fallback={<div className="scene scene-fallback" aria-hidden="true" />}>
         <PersistentScene
-          activeChapter={activeChapter}
+          activeChapter={Math.max(0, activeChapter - 1)}
           ignited={ignited}
           productivity={result.index}
           processMode={processMode}
@@ -98,7 +101,7 @@ export function App() {
             <a key={chapter} href={`#${chapterIds[index]}`} className={activeChapter === index ? 'active' : ''}>{chapter}</a>
           ))}
         </nav>
-        <span className="chapter-count">{String(activeChapter + 1).padStart(2, '0')} / 06</span>
+        <span className="chapter-count">{String(activeChapter + 1).padStart(2, '0')} / {String(chapters.length).padStart(2, '0')}</span>
         <div className="progress" style={{ transform: `scaleX(${(activeChapter + 1) / chapters.length})` }} />
       </header>
 
@@ -118,6 +121,15 @@ export function App() {
             <i>或</i>
             <strong>杂草</strong>
           </div>
+        </section>
+
+        <section id="adoption" className="adoption-section chapter" aria-labelledby="adoption-title">
+          <div className="section-copy adoption-heading reveal">
+            <p className="eyebrow">为什么是现在</p>
+            <h2 id="adoption-title">采用率在上升，生产力却不会自动发生</h2>
+            <p>2025年，五分之一的欧盟企业已经使用AI。但同一条增长曲线里，藏着采用深度、组织规模、任务类型与地区条件四种完全不同的扩散速度。</p>
+          </div>
+          <AdoptionStory scene={adoptionScene} onSceneChange={setAdoptionScene} />
         </section>
 
         <section className="factor-section chapter" aria-labelledby="factor-title">
