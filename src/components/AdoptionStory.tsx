@@ -31,6 +31,23 @@ const data = adoptionJson as AdoptionData
 const ledger = ledgerJson as LedgerEntry[]
 const colors = ['#f26a2e', '#ecebe4', 'rgba(236,235,228,.42)', '#f26a2e']
 
+function depthSeries(name: string) {
+  const series = data.depth.series.find((candidate) => candidate.name === name)
+  if (!series) throw new Error(`adoption-series.json 缺少深度序列「${name}」`)
+  return series.values
+}
+
+function sizeGroup(name: string) {
+  const group = data.size.groups.find((candidate) => candidate.name === name)
+  if (!group) throw new Error(`adoption-series.json 缺少规模分组「${name}」`)
+  return group
+}
+
+const latestAtLeastOne = depthSeries('至少一种').at(-1)!.value
+const previousAtLeastOne = depthSeries('至少一种').at(-2)!.value
+const latestAtLeastThree = depthSeries('至少三种').at(-1)!.value
+const sizeGapValue = percentagePointGap(sizeGroup('大型企业').value2025, sizeGroup('小型企业').value2025)
+
 function DepthChart() {
   const x = (year: number) => scaleLinear(year, [2023, 2025], [126, 742])
   const y = (value: number) => scaleLinear(value, [0, 22], [410, 72])
@@ -104,9 +121,9 @@ export function AdoptionStory({ scene, onSceneChange }: { scene: AdoptionSceneKe
   const source = ledger.find((entry) => entry.id === sceneData.ledgerId)!
   const atoms = buildAtomLayout(scene)
   const insight = scene === 'depth'
-    ? `一年内增长 ${relativeGrowth(13.5, 20).toFixed(1)}%，但使用三种以上技术的企业仍只有 8.3%。`
+    ? `一年内增长 ${relativeGrowth(previousAtLeastOne, latestAtLeastOne).toFixed(1)}%，但使用三种以上技术的企业仍只有 ${latestAtLeastThree}%。`
     : scene === 'size'
-      ? `大型与小型企业相差 ${percentagePointGap(55.03, 17).toFixed(2)} 个百分点。`
+      ? `大型与小型企业相差 ${sizeGapValue.toFixed(2)} 个百分点。`
       : scene === 'technology'
         ? '文本分析领先，说明AI最先进入语言密集、可拆分的日常任务。'
         : '最高与最低国家相差 8 倍，扩散不是一条均匀上升的曲线。'

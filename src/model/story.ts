@@ -4,7 +4,7 @@ export type CausalNodeId = 'decision' | 'task' | 'factors' | 'process' | 'result
 
 export type ChapterId = 'engine' | 'adoption' | 'factors' | 'process' | 'industry' | 'lab' | 'cost' | 'conclusion'
 
-export const chapterOrder: ChapterId[] = ['engine', 'adoption', 'process', 'industry', 'lab', 'cost', 'conclusion']
+export const chapterOrder: ChapterId[] = ['engine', 'adoption', 'factors', 'process', 'industry', 'lab', 'cost', 'conclusion']
 
 export const chapterLabels: Record<ChapterId, string> = {
   engine: '引擎',
