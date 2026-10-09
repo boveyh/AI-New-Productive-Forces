@@ -140,7 +140,5 @@ export function FinalExpansion() {
     </div>
     <div className="return-to-field"><span>回到那块田</span><p>“喷，还是不喷”没有消失，而是被拆成更多可以复制的小判断。可复制判断拆得越细，剩下的不可复制判断就越需要被明确指认。</p></div>
     <div className="non-transferable"><p>识别规则：如果判断出错，责任能否完整、明确地转移给另一个人或系统？不能转移的，就必须留下清晰的人类责任节点。</p><ul><li>高影响且不可逆</li><li>责任无法转移</li><li>依赖现场身体经验</li><li>涉及价值排序</li></ul></div>
-    <blockquote><span>机制</span>AI降低可复制判断的成本，使过去无法规模化的新任务、新产品和新组织方式成为可能。</blockquote>
-    <blockquote><span>边界</span>判断越能被复制，责任越不能一起被复制。上限取决于哪些判断被明确留给人，并且有人为它负责。</blockquote>
   </div>
 }

@@ -3,6 +3,7 @@ import { ArrowRight, CheckCircle, Database, Gauge, Leaf, Warning } from '@phosph
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { AdoptionStory } from './components/AdoptionStory'
+import { ConclusionSummary } from './components/ConclusionSummary'
 import { EvidenceTheater } from './components/EvidenceTheater'
 import { FieldView } from './components/FieldView'
 import { IndustryGraph } from './components/IndustryGraph'
@@ -83,6 +84,9 @@ export function App() {
   const [intervention, setIntervention] = useState(48)
   const [activeCase, setActiveCase] = useState(0)
   const [presetNote, setPresetNote] = useState<string | null>(null)
+  // 高亮只走一个方向：总结表 → 星图。这里存的是表格当前指向的环节下标，
+  // 星图只读不写，所以不需要反向的状态，也就不会变成第二个导航。
+  const [focusStage, setFocusStage] = useState<number | null>(null)
   const riskMode = governance >= 50 ? '负责任采用' : '无治理扩张'
   const result = useMemo(() => evaluateProductivity(inputs), [inputs])
   const labState = useMemo(() => resolveSliderState('productivity', result.complementarity * 100, { complementarity: result.complementarity }), [result.complementarity])
@@ -327,6 +331,7 @@ export function App() {
             <p>真正的选择不是要不要使用AI，而是让哪些判断自动完成，让哪些责任继续由人承担。</p>
             <div className="augmentation-control"><RangeInstrument kind="augmentation" label="从任务替代到能力增强" value={augmentation} onChange={setAugmentation} metricUnits={{ 任务速度: '%' }} /></div>
             <FinalExpansion />
+            <ConclusionSummary augmentation={augmentation} focusIndex={focusStage} onFocusStage={setFocusStage} />
           </div>
         </section>
       </main>

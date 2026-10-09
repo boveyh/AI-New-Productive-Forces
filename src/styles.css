@@ -571,7 +571,28 @@ blockquote { max-width: 820px; margin: 0 auto; font-size: clamp(25px, 3.2vw, 43p
 .domain-detail { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr; gap: 12px; align-items: center; padding: 28px 0 60px; }.domain-detail > span { color: #b9bec1; font-size: 13px; line-height: 1.55; }.domain-detail b { display: block; margin-bottom: 5px; color: var(--text); font-size: 10px; }.domain-detail > svg { color: var(--accent); }
 .return-to-field { display: grid; grid-template-columns: .3fr 1fr; gap: 5vw; padding: 58px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }.return-to-field span { color: var(--accent); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 11px; }.return-to-field p { margin: 0; font-size: clamp(20px, 2.4vw, 32px); line-height: 1.45; letter-spacing: -.03em; }
 .non-transferable { display: grid; grid-template-columns: 1fr 1fr; gap: 6vw; padding: 58px 0; }.non-transferable > p { color: #b9bec1; line-height: 1.75; }.non-transferable ul { list-style: none; display: grid; gap: 0; margin: 0; padding: 0; counter-reset: boundary; }.non-transferable li { padding: 14px 0; border-bottom: 1px solid var(--line); counter-increment: boundary; }.non-transferable li::before { content: "0" counter(boundary); margin-right: 18px; color: var(--accent); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 10px; }
-.final-expansion blockquote { max-width: none; display: grid; grid-template-columns: 90px 1fr; gap: 26px; margin: 0; padding: 36px 0; border-top: 1px solid var(--line); font-size: clamp(24px, 3vw, 40px); text-align: left; }.final-expansion blockquote span { padding-top: 8px; color: var(--accent); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 11px; letter-spacing: 0; }
+/* 结尾总结：表格是信息载体，三条收束结论是它的读数。
+   表格按「因果环节」而不是「章节」排列，所以表头写「环节」；结论章本身不进表。 */
+.summary { margin-top: 70px; text-align: left; }
+.summary-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.summary-table caption { padding-bottom: 22px; color: var(--muted); font-size: 12px; line-height: 1.7; text-align: left; }
+.summary-table th, .summary-table td { padding: 18px 20px; border-bottom: 1px solid var(--line); vertical-align: top; text-align: left; }
+.summary-table thead th { padding-top: 0; color: var(--muted); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 10px; font-weight: 400; letter-spacing: .06em; border-bottom-color: rgb(255 255 255 / .22); }
+.summary-table tbody th { font-weight: 400; }
+.summary-table tbody td { color: #b9bec1; line-height: 1.65; }
+.summary-table tbody tr { transition: background .2s ease; }
+.summary-table tbody tr:hover, .summary-table tbody tr.is-focused { background: rgb(242 106 46 / .06); }
+.summary-stage { display: inline-flex; align-items: center; gap: 8px; color: var(--text); font-size: 15px; text-decoration: none; white-space: nowrap; }
+.summary-stage svg { color: var(--accent); font-size: 13px; }
+.summary-anchor { display: inline-flex; flex-wrap: wrap; gap: 6px 14px; }
+.summary-anchor a { color: var(--accent); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 13px; text-decoration: none; border-bottom: 1px solid rgb(242 106 46 / .35); }
+.summary-anchor-empty { color: #596167; font-family: "IBM Plex Mono", Consolas, monospace; cursor: help; }
+
+.summary-takeaways { margin-top: 54px; }
+.summary-takeaways blockquote { max-width: none; display: grid; grid-template-columns: 90px 1fr; gap: 26px; margin: 0; padding: 36px 0; border-top: 1px solid var(--line); font-size: clamp(24px, 3vw, 40px); text-align: left; }
+.summary-takeaways blockquote span { padding-top: 8px; color: var(--accent); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 11px; letter-spacing: 0; }
+.summary-takeaways blockquote.is-current span { display: flex; align-items: center; gap: 7px; color: var(--accent-bright); }
+.summary-takeaways blockquote.is-current span::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent-bright); }
 
 footer { min-height: 100px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px; padding: 0 4vw; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
 footer a { color: var(--text); text-decoration: none; }
@@ -684,7 +705,19 @@ footer span:last-child { justify-self: end; }
   .story-bridge { min-height: 92px; grid-template-columns: 22px 1fr; gap: 10px; padding-block: 18px; }.bridge-marker::before { top: -18px; bottom: -18px; }.bridge-desktop { display: none; }.story-bridge details { display: block; }.story-bridge summary { width: auto; display: flex; justify-content: space-between; gap: 12px; color: var(--text); font-size: 15px; line-height: 1.45; }.story-bridge details p { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
   .range-tradeoff { grid-template-columns: 1fr; }.range-metrics { grid-template-columns: repeat(2, 1fr); }
   .lab-metrics { grid-template-columns: repeat(2, 1fr); }
-  .final-expansion { margin-top: 50px; }.constraint-frame { text-align: left; }.constraint-frame h3 br { display: none; }.final-expansion > svg { height: 120px; }.domain-paths { display: flex; overflow-x: auto; scrollbar-width: none; }.domain-paths button { flex: 0 0 190px; }.domain-detail { grid-template-columns: 1fr; }.domain-detail > svg { transform: rotate(90deg); }.return-to-field, .non-transferable { grid-template-columns: 1fr; }.final-expansion blockquote { grid-template-columns: 1fr; gap: 8px; }
+  .final-expansion { margin-top: 50px; }.constraint-frame { text-align: left; }.constraint-frame h3 br { display: none; }.final-expansion > svg { height: 120px; }.domain-paths { display: flex; overflow-x: auto; scrollbar-width: none; }.domain-paths button { flex: 0 0 190px; }.domain-detail { grid-template-columns: 1fr; }.domain-detail > svg { transform: rotate(90deg); }.return-to-field, .non-transferable { grid-template-columns: 1fr; }
+  /* 375px 下四列表格必然横向溢出，改成卡片式堆叠：表头隐藏，单元格用 data-label 自带行标题。 */
+  .summary { margin-top: 50px; }
+  .summary-table, .summary-table tbody, .summary-table tr, .summary-table th, .summary-table td { display: block; width: 100%; }
+  /* caption 的可计算 display 仍是 table-caption：父元素变成 block 后它会被包进匿名表盒并按
+     收缩宽度排版，中文只剩每行一两个字。必须显式 block 化，否则表头说明会塌成一条竖线。 */
+  .summary-table caption { display: block; width: 100%; }
+  .summary-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .summary-table tbody tr { padding: 20px 0; border-bottom: 1px solid var(--line); }
+  .summary-table tbody th { padding: 0 0 10px; border-bottom: 0; }
+  .summary-table tbody td { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 0; }
+  .summary-table tbody td::before { content: attr(data-label); color: var(--muted); font-family: "IBM Plex Mono", Consolas, monospace; font-size: 10px; }
+  .summary-takeaways { margin-top: 40px; }.summary-takeaways blockquote { grid-template-columns: 1fr; gap: 8px; }
   footer { grid-template-columns: 1fr auto; }
   footer span:last-child { display: none; }
 }

@@ -30,6 +30,8 @@ export type SummaryAnchor = {
   claim: string
   year: number
   geography: string
+  sourceUrl: string
+  sourceTitle: string
 }
 
 export type SummaryRow = {
@@ -63,6 +65,8 @@ export function buildSummaryRows(): SummaryRow[] {
         claim: entry.claim,
         year: entry.year,
         geography: entry.geography,
+        sourceUrl: entry.sourceUrl,
+        sourceTitle: entry.sourceTitle,
       }
     }),
   }))
