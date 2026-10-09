@@ -81,13 +81,40 @@ export function HerbicideSavingChart() {
 
 const accuracyOptions = [0.6, 0.85, 0.95]
 
+/**
+ * 画布几何集中定义。
+ *
+ * viewBox 的高度与所有基线（x 轴刻度、轴标题、交叉线端点）都从这里派生，
+ * 而不是散落在 JSX 里的字面量。否则一旦调整画布高度，就会漏改某个 y 坐标，
+ * 把轴标签静默裁到画布之外——这类裁切在常规走查里很难被发现。
+ */
+const tradeoffLayout = {
+  width: 460,
+  left: 54,
+  right: 430,
+  /** 绘图区上下沿：两条误差曲线可到达的范围 */
+  plotTop: 48,
+  plotBottom: 248,
+  /** x 轴刻度 / 轴标题相对绘图区下沿的基线距离 */
+  tickGap: 22,
+  axisGap: 44,
+  /** 轴标题基线之下保留的余量，与 axisGap 一起决定 viewBox 高度 */
+  bottomSlack: 8,
+}
+
+const tradeoffPlotWidth = tradeoffLayout.right - tradeoffLayout.left
+const tradeoffPlotHeight = tradeoffLayout.plotBottom - tradeoffLayout.plotTop
+const tradeoffTickY = tradeoffLayout.plotBottom + tradeoffLayout.tickGap
+const tradeoffAxisY = tradeoffLayout.plotBottom + tradeoffLayout.axisGap
+const tradeoffHeight = tradeoffAxisY + tradeoffLayout.bottomSlack
+
 export function ThresholdTradeoffChart() {
   const [accuracy, setAccuracy] = useState(0.85)
   const curve = useMemo(() => tradeoffCurve({ steps: 41, accuracy }), [accuracy])
   const crossing = curve.findIndex((point) => point.missedRate >= point.falseRate)
   const crossPoint = crossing > 0 ? curve[crossing] : null
-  const x = (threshold: number) => 54 + threshold * 376
-  const y = (rate: number) => 248 - rate * 200
+  const x = (threshold: number) => tradeoffLayout.left + threshold * tradeoffPlotWidth
+  const y = (rate: number) => tradeoffLayout.plotBottom - rate * tradeoffPlotHeight
   const line = (pick: (point: (typeof curve)[number]) => number) => curve.map((point) => `${x(point.decisionThreshold)},${y(pick(point))}`).join(' ')
 
   return <div className="mechanism-chart reveal">
@@ -102,19 +129,19 @@ export function ThresholdTradeoffChart() {
       </button>)}
     </div>
 
-    <svg className="tradeoff-canvas" viewBox="0 0 460 300" role="img" aria-label={`识别准确率 ${Math.round(accuracy * 100)}% 下，判定阈值从 0 升到 1 时漏喷与误喷的此消彼长。`}>
+    <svg className="tradeoff-canvas" viewBox={`0 0 ${tradeoffLayout.width} ${tradeoffHeight}`} role="img" aria-label={`识别准确率 ${Math.round(accuracy * 100)}% 下，判定阈值从 0 升到 1 时漏喷与误喷的此消彼长。`}>
       {[0, 0.25, 0.5, 0.75, 1].map((rate) => <g key={rate}>
-        <line className="tradeoff-grid" x1="54" x2="430" y1={y(rate)} y2={y(rate)} />
-        <text className="tradeoff-tick" x="44" y={y(rate) + 4} textAnchor="end">{Math.round(rate * 100)}%</text>
+        <line className="tradeoff-grid" x1={tradeoffLayout.left} x2={tradeoffLayout.right} y1={y(rate)} y2={y(rate)} />
+        <text className="tradeoff-tick" x={tradeoffLayout.left - 10} y={y(rate) + 4} textAnchor="end">{Math.round(rate * 100)}%</text>
       </g>)}
-      {[0, 0.5, 1].map((threshold) => <text key={threshold} className="tradeoff-tick" x={x(threshold)} y="270" textAnchor="middle">{threshold.toFixed(1)}</text>)}
-      <text className="tradeoff-axis" x="242" y="292" textAnchor="middle">判定阈值（多高才触发喷洒）</text>
+      {[0, 0.5, 1].map((threshold) => <text key={threshold} className="tradeoff-tick" x={x(threshold)} y={tradeoffTickY} textAnchor="middle">{threshold.toFixed(1)}</text>)}
+      <text className="tradeoff-axis" x={tradeoffLayout.left + tradeoffPlotWidth / 2} y={tradeoffAxisY} textAnchor="middle">判定阈值（多高才触发喷洒）</text>
 
       <polyline className="tradeoff-line is-false" points={line((point) => point.falseRate)} />
       <polyline className="tradeoff-line is-missed" points={line((point) => point.missedRate)} />
 
       {crossPoint && <g className="tradeoff-crossing">
-        <line x1={x(crossPoint.decisionThreshold)} x2={x(crossPoint.decisionThreshold)} y1="48" y2="248" />
+        <line x1={x(crossPoint.decisionThreshold)} x2={x(crossPoint.decisionThreshold)} y1={tradeoffLayout.plotTop} y2={tradeoffLayout.plotBottom} />
         <circle cx={x(crossPoint.decisionThreshold)} cy={y(crossPoint.missedRate)} r="5" />
         <text x={x(crossPoint.decisionThreshold) + 10} y={y(crossPoint.missedRate) - 12}>这里需要人工复核</text>
       </g>}
@@ -130,7 +157,29 @@ export function ThresholdTradeoffChart() {
 }
 
 const surfaceSteps = 20
-const surfaceBox = { left: 64, right: 430, top: 44, bottom: 252 }
+
+/** 与阈值图同理：画布几何集中定义，viewBox 高度与所有基线从同一份锚点派生。 */
+const surfaceLayout = {
+  width: 460,
+  left: 64,
+  right: 430,
+  /** 绘图区上下沿：响应面色块铺满的范围 */
+  plotTop: 44,
+  plotBottom: 252,
+  /** 顶部轴标题的基线 */
+  titleY: 32,
+  /** x 轴刻度 / 轴标题相对绘图区下沿的基线距离 */
+  tickGap: 20,
+  axisGap: 48,
+  /** 轴标题基线之下保留的余量 */
+  bottomSlack: 20,
+}
+
+const surfacePlotWidth = surfaceLayout.right - surfaceLayout.left
+const surfacePlotHeight = surfaceLayout.plotBottom - surfaceLayout.plotTop
+const surfaceTickY = surfaceLayout.plotBottom + surfaceLayout.tickGap
+const surfaceAxisY = surfaceLayout.plotBottom + surfaceLayout.axisGap
+const surfaceHeight = surfaceAxisY + surfaceLayout.bottomSlack
 
 function surfaceColor(ratio: number) {
   const from = [22, 28, 32]
@@ -146,12 +195,10 @@ export function ResponseSurfaceChart({ investment, complementarity }: { investme
     return { min: Math.min(...values), max: Math.max(...values) }
   }, [grid])
   const span = bounds.max - bounds.min || 1
-  const width = surfaceBox.right - surfaceBox.left
-  const height = surfaceBox.bottom - surfaceBox.top
-  const cellW = width / (surfaceSteps - 1) + 0.8
-  const cellH = height / (surfaceSteps - 1) + 0.8
-  const x = (value: number) => surfaceBox.left + value * width
-  const y = (value: number) => surfaceBox.bottom - value * height
+  const cellW = surfacePlotWidth / (surfaceSteps - 1) + 0.8
+  const cellH = surfacePlotHeight / (surfaceSteps - 1) + 0.8
+  const x = (value: number) => surfaceLayout.left + value * surfacePlotWidth
+  const y = (value: number) => surfaceLayout.plotBottom - value * surfacePlotHeight
   const markerX = x(Math.min(1, Math.max(0, investment)))
   const markerY = y(Math.min(1, Math.max(0, complementarity)))
 
@@ -161,7 +208,7 @@ export function ResponseSurfaceChart({ investment, complementarity }: { investme
       <h3>整个投入平面上，有效生产力指数长什么样</h3>
     </div>
 
-    <svg className="surface-canvas" viewBox="0 0 460 320" role="img" aria-label={`AI投入强度与协同基础构成的响应面。当前投入 ${Math.round(investment * 100)}%，协同基础 ${Math.round(complementarity * 100)}%。`}>
+    <svg className="surface-canvas" viewBox={`0 0 ${surfaceLayout.width} ${surfaceHeight}`} role="img" aria-label={`AI投入强度与协同基础构成的响应面。当前投入 ${Math.round(investment * 100)}%，协同基础 ${Math.round(complementarity * 100)}%。`}>
       {grid.map((point) => <rect
         key={`${point.investment}-${point.complementarity}`}
         x={x(point.investment) - cellW / 2}
@@ -171,16 +218,16 @@ export function ResponseSurfaceChart({ investment, complementarity }: { investme
         fill={surfaceColor((point.index - bounds.min) / span)}
       />)}
 
-      <line className="surface-base-line" x1={surfaceBox.left} x2={surfaceBox.right} y1={y(0.5)} y2={y(0.5)} />
-      <text className="surface-base-label" x={surfaceBox.right - 6} y={y(0.5) - 8} textAnchor="end">协同基础 0.5 · 收益开始超过摩擦</text>
+      <line className="surface-base-line" x1={surfaceLayout.left} x2={surfaceLayout.right} y1={y(0.5)} y2={y(0.5)} />
+      <text className="surface-base-label" x={surfaceLayout.right - 6} y={y(0.5) - 8} textAnchor="end">协同基础 0.5 · 收益开始超过摩擦</text>
 
       <circle className="surface-marker" cx={markerX} cy={markerY} r="7" />
       <circle className="surface-marker-ring" cx={markerX} cy={markerY} r="13" />
 
-      {[0, 0.5, 1].map((tick) => <text key={`x-${tick}`} className="tradeoff-tick" x={x(tick)} y={surfaceBox.bottom + 20} textAnchor="middle">{(tick * 100).toFixed(0)}%</text>)}
-      {[0, 0.5, 1].map((tick) => <text key={`y-${tick}`} className="tradeoff-tick" x={surfaceBox.left - 10} y={y(tick) + 4} textAnchor="end">{(tick * 100).toFixed(0)}%</text>)}
-      <text className="tradeoff-axis" x={(surfaceBox.left + surfaceBox.right) / 2} y="300" textAnchor="middle">AI投入强度</text>
-      <text className="tradeoff-axis" x={surfaceBox.left} y="32">协同基础（数据 × 流程 × 训练）</text>
+      {[0, 0.5, 1].map((tick) => <text key={`x-${tick}`} className="tradeoff-tick" x={x(tick)} y={surfaceTickY} textAnchor="middle">{(tick * 100).toFixed(0)}%</text>)}
+      {[0, 0.5, 1].map((tick) => <text key={`y-${tick}`} className="tradeoff-tick" x={surfaceLayout.left - 10} y={y(tick) + 4} textAnchor="end">{(tick * 100).toFixed(0)}%</text>)}
+      <text className="tradeoff-axis" x={surfaceLayout.left + surfacePlotWidth / 2} y={surfaceAxisY} textAnchor="middle">AI投入强度</text>
+      <text className="tradeoff-axis" x={surfaceLayout.left} y={surfaceLayout.titleY}>协同基础（数据 × 流程 × 训练）</text>
     </svg>
 
     <div className="surface-scale">
