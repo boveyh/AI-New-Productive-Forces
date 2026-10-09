@@ -93,8 +93,8 @@ const tradeoffLayout = {
   left: 54,
   right: 430,
   /** 绘图区上下沿：两条误差曲线可到达的范围 */
-  plotTop: 48,
-  plotBottom: 248,
+  plotTop: 18,
+  plotBottom: 218,
   /** x 轴刻度 / 轴标题相对绘图区下沿的基线距离 */
   tickGap: 22,
   axisGap: 44,
@@ -123,36 +123,41 @@ export function ThresholdTradeoffChart() {
       <h3>提高判定阈值，只是把误差从一边搬到另一边</h3>
     </div>
 
-    <div className="segmented" role="group" aria-label="识别准确率">
-      {accuracyOptions.map((option) => <button key={option} type="button" aria-pressed={accuracy === option} onClick={() => setAccuracy(option)}>
-        识别准确率 {Math.round(option * 100)}%
-      </button>)}
+    <div className="mechanism-split">
+      <div className="mechanism-canvas-col">
+        <svg className="tradeoff-canvas" viewBox={`0 0 ${tradeoffLayout.width} ${tradeoffHeight}`} role="img" aria-label={`识别准确率 ${Math.round(accuracy * 100)}% 下，判定阈值从 0 升到 1 时漏喷与误喷的此消彼长。`}>
+          {[0, 0.25, 0.5, 0.75, 1].map((rate) => <g key={rate}>
+            <line className="tradeoff-grid" x1={tradeoffLayout.left} x2={tradeoffLayout.right} y1={y(rate)} y2={y(rate)} />
+            <text className="tradeoff-tick" x={tradeoffLayout.left - 10} y={y(rate) + 4} textAnchor="end">{Math.round(rate * 100)}%</text>
+          </g>)}
+          {[0, 0.5, 1].map((threshold) => <text key={threshold} className="tradeoff-tick" x={x(threshold)} y={tradeoffTickY} textAnchor="middle">{threshold.toFixed(1)}</text>)}
+          <text className="tradeoff-axis" x={tradeoffLayout.left + tradeoffPlotWidth / 2} y={tradeoffAxisY} textAnchor="middle">判定阈值（多高才触发喷洒）</text>
+
+          <polyline className="tradeoff-line is-false" points={line((point) => point.falseRate)} />
+          <polyline className="tradeoff-line is-missed" points={line((point) => point.missedRate)} />
+
+          {crossPoint && <g className="tradeoff-crossing">
+            <line x1={x(crossPoint.decisionThreshold)} x2={x(crossPoint.decisionThreshold)} y1={tradeoffLayout.plotTop} y2={tradeoffLayout.plotBottom} />
+            <circle cx={x(crossPoint.decisionThreshold)} cy={y(crossPoint.missedRate)} r="5" />
+            <text x={x(crossPoint.decisionThreshold) + 10} y={y(crossPoint.missedRate) - 12}>这里需要人工复核</text>
+          </g>}
+        </svg>
+
+        <div className="segmented" role="group" aria-label="识别准确率">
+          {accuracyOptions.map((option) => <button key={option} type="button" aria-pressed={accuracy === option} onClick={() => setAccuracy(option)}>
+            识别准确率 {Math.round(option * 100)}%
+          </button>)}
+        </div>
+      </div>
+
+      <aside className="mechanism-side">
+        <div className="mechanism-legend">
+          <span><i className="missed" />漏喷率</span>
+          <span><i className="false" />误喷率</span>
+        </div>
+        <p className="mechanism-note">阈值只能决定误差如何分配，不能把两类误差同时清零。分配不掉的那部分，就是治理章要求保留人工复核的位置。</p>
+      </aside>
     </div>
-
-    <svg className="tradeoff-canvas" viewBox={`0 0 ${tradeoffLayout.width} ${tradeoffHeight}`} role="img" aria-label={`识别准确率 ${Math.round(accuracy * 100)}% 下，判定阈值从 0 升到 1 时漏喷与误喷的此消彼长。`}>
-      {[0, 0.25, 0.5, 0.75, 1].map((rate) => <g key={rate}>
-        <line className="tradeoff-grid" x1={tradeoffLayout.left} x2={tradeoffLayout.right} y1={y(rate)} y2={y(rate)} />
-        <text className="tradeoff-tick" x={tradeoffLayout.left - 10} y={y(rate) + 4} textAnchor="end">{Math.round(rate * 100)}%</text>
-      </g>)}
-      {[0, 0.5, 1].map((threshold) => <text key={threshold} className="tradeoff-tick" x={x(threshold)} y={tradeoffTickY} textAnchor="middle">{threshold.toFixed(1)}</text>)}
-      <text className="tradeoff-axis" x={tradeoffLayout.left + tradeoffPlotWidth / 2} y={tradeoffAxisY} textAnchor="middle">判定阈值（多高才触发喷洒）</text>
-
-      <polyline className="tradeoff-line is-false" points={line((point) => point.falseRate)} />
-      <polyline className="tradeoff-line is-missed" points={line((point) => point.missedRate)} />
-
-      {crossPoint && <g className="tradeoff-crossing">
-        <line x1={x(crossPoint.decisionThreshold)} x2={x(crossPoint.decisionThreshold)} y1={tradeoffLayout.plotTop} y2={tradeoffLayout.plotBottom} />
-        <circle cx={x(crossPoint.decisionThreshold)} cy={y(crossPoint.missedRate)} r="5" />
-        <text x={x(crossPoint.decisionThreshold) + 10} y={y(crossPoint.missedRate) - 12}>这里需要人工复核</text>
-      </g>}
-    </svg>
-
-    <div className="mechanism-legend">
-      <span><i className="missed" />漏喷率</span>
-      <span><i className="false" />误喷率</span>
-    </div>
-
-    <p className="mechanism-note">阈值只能决定误差如何分配，不能把两类误差同时清零。分配不掉的那部分，就是治理章要求保留人工复核的位置。</p>
   </div>
 }
 
@@ -164,15 +169,15 @@ const surfaceLayout = {
   left: 64,
   right: 430,
   /** 绘图区上下沿：响应面色块铺满的范围 */
-  plotTop: 44,
-  plotBottom: 252,
+  plotTop: 30,
+  plotBottom: 238,
   /** 顶部轴标题的基线 */
-  titleY: 32,
+  titleY: 16,
   /** x 轴刻度 / 轴标题相对绘图区下沿的基线距离 */
-  tickGap: 20,
-  axisGap: 48,
+  tickGap: 18,
+  axisGap: 40,
   /** 轴标题基线之下保留的余量 */
-  bottomSlack: 20,
+  bottomSlack: 8,
 }
 
 const surfacePlotWidth = surfaceLayout.right - surfaceLayout.left
@@ -208,35 +213,40 @@ export function ResponseSurfaceChart({ investment, complementarity }: { investme
       <h3>整个投入平面上，有效生产力指数长什么样</h3>
     </div>
 
-    <svg className="surface-canvas" viewBox={`0 0 ${surfaceLayout.width} ${surfaceHeight}`} role="img" aria-label={`AI投入强度与协同基础构成的响应面。当前投入 ${Math.round(investment * 100)}%，协同基础 ${Math.round(complementarity * 100)}%。`}>
-      {grid.map((point) => <rect
-        key={`${point.investment}-${point.complementarity}`}
-        x={x(point.investment) - cellW / 2}
-        y={y(point.complementarity) - cellH / 2}
-        width={cellW}
-        height={cellH}
-        fill={surfaceColor((point.index - bounds.min) / span)}
-      />)}
+    <div className="mechanism-split">
+      <div className="mechanism-canvas-col">
+        <svg className="surface-canvas" viewBox={`0 0 ${surfaceLayout.width} ${surfaceHeight}`} role="img" aria-label={`AI投入强度与协同基础构成的响应面。当前投入 ${Math.round(investment * 100)}%，协同基础 ${Math.round(complementarity * 100)}%。`}>
+          {grid.map((point) => <rect
+            key={`${point.investment}-${point.complementarity}`}
+            x={x(point.investment) - cellW / 2}
+            y={y(point.complementarity) - cellH / 2}
+            width={cellW}
+            height={cellH}
+            fill={surfaceColor((point.index - bounds.min) / span)}
+          />)}
 
-      <line className="surface-base-line" x1={surfaceLayout.left} x2={surfaceLayout.right} y1={y(0.5)} y2={y(0.5)} />
-      <text className="surface-base-label" x={surfaceLayout.right - 6} y={y(0.5) - 8} textAnchor="end">协同基础 0.5 · 收益开始超过摩擦</text>
+          <line className="surface-base-line" x1={surfaceLayout.left} x2={surfaceLayout.right} y1={y(0.5)} y2={y(0.5)} />
+          <text className="surface-base-label" x={surfaceLayout.right - 6} y={y(0.5) - 8} textAnchor="end">协同基础 0.5 · 收益开始超过摩擦</text>
 
-      <circle className="surface-marker" cx={markerX} cy={markerY} r="7" />
-      <circle className="surface-marker-ring" cx={markerX} cy={markerY} r="13" />
+          <circle className="surface-marker" cx={markerX} cy={markerY} r="7" />
+          <circle className="surface-marker-ring" cx={markerX} cy={markerY} r="13" />
 
-      {[0, 0.5, 1].map((tick) => <text key={`x-${tick}`} className="tradeoff-tick" x={x(tick)} y={surfaceTickY} textAnchor="middle">{(tick * 100).toFixed(0)}%</text>)}
-      {[0, 0.5, 1].map((tick) => <text key={`y-${tick}`} className="tradeoff-tick" x={surfaceLayout.left - 10} y={y(tick) + 4} textAnchor="end">{(tick * 100).toFixed(0)}%</text>)}
-      <text className="tradeoff-axis" x={surfaceLayout.left + surfacePlotWidth / 2} y={surfaceAxisY} textAnchor="middle">AI投入强度</text>
-      <text className="tradeoff-axis" x={surfaceLayout.left} y={surfaceLayout.titleY}>协同基础（数据 × 流程 × 训练）</text>
-    </svg>
+          {[0, 0.5, 1].map((tick) => <text key={`x-${tick}`} className="tradeoff-tick" x={x(tick)} y={surfaceTickY} textAnchor="middle">{(tick * 100).toFixed(0)}%</text>)}
+          {[0, 0.5, 1].map((tick) => <text key={`y-${tick}`} className="tradeoff-tick" x={surfaceLayout.left - 10} y={y(tick) + 4} textAnchor="end">{(tick * 100).toFixed(0)}%</text>)}
+          <text className="tradeoff-axis" x={surfaceLayout.left + surfacePlotWidth / 2} y={surfaceAxisY} textAnchor="middle">AI投入强度</text>
+          <text className="tradeoff-axis" x={surfaceLayout.left} y={surfaceLayout.titleY}>协同基础（数据 × 流程 × 训练）</text>
+        </svg>
+      </div>
 
-    <div className="surface-scale">
-      <span>有效生产力指数</span>
-      <i />
-      <span>{bounds.min.toFixed(0)} → {bounds.max.toFixed(0)}</span>
-      <span className="surface-current"><b />当前位置 · 投入 {Math.round(investment * 100)}% / 协同 {Math.round(complementarity * 100)}%</span>
+      <aside className="mechanism-side">
+        <div className="surface-scale">
+          <span>有效生产力指数</span>
+          <i />
+          <span>{bounds.min.toFixed(0)} → {bounds.max.toFixed(0)}</span>
+          <span className="surface-current"><b />当前位置 · 投入 {Math.round(investment * 100)}% / 协同 {Math.round(complementarity * 100)}%</span>
+        </div>
+        <p className="mechanism-note">横轴把投入推到多高，都不能越过协同基础的边界；纵轴低于 0.5 时，投入越多只是把收益变成摩擦。</p>
+      </aside>
     </div>
-
-    <p className="mechanism-note">横轴把投入推到多高，都不能越过协同基础的边界；纵轴低于 0.5 时，投入越多只是把收益变成摩擦。</p>
   </div>
 }
