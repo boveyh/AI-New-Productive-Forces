@@ -158,7 +158,7 @@ export function App() {
           processMode={processMode}
           selectedIndustry={Math.min(selectedIndustry, 2)}
           riskMode={riskMode}
-          augmentation={augmentation}
+          focusIndex={focusStage}
         />
       </Suspense>
       <header className="nav-shell">

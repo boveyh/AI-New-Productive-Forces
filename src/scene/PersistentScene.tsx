@@ -1,8 +1,8 @@
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Line, Sparkles } from '@react-three/drei'
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
-import type { ChapterId } from '../model/story'
+import { causalNodes, type CausalNodeId, type ChapterId } from '../model/story'
 
 type ProcessMode = '传统流程' | 'AI辅助' | '人机协同'
 type RiskMode = '无治理扩张' | '负责任采用'
@@ -14,12 +14,16 @@ type SceneProps = {
   processMode: ProcessMode
   selectedIndustry: number
   riskMode: RiskMode
-  augmentation: number
+  /** 总结表当前指向的环节下标。单向：表格 → 星图，星图不回写。 */
+  focusIndex: number | null
 }
 
 const orange = '#f26a2e'
 const orangeBright = '#ff895a'
 const neutral = '#a9b0b5'
+
+/** 减少动效时 frameloop 切到 demand，逐帧累积的渐变会停在半亮，因此需要提前知道。 */
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const pulseSlot: Record<ChapterId, number> = {
   engine: 0,
@@ -229,27 +233,80 @@ function RiskField({ mode }: { mode: RiskMode }) {
   )
 }
 
-function ConclusionNetwork({ augmentation }: { augmentation: number }) {
+/**
+ * 结论章星图的 6 个节点，与总结表的 6 个环节一一对应。
+ *
+ * 用 `Record<CausalNodeId, …>` 而不是位置数组：漏一个环节或多一个环节都会编译失败，
+ * 这样「第 3 行表格高亮的不是第 3 个节点」这种错位不可能悄悄发生。
+ * 位置顺序只影响构图（顺时针一圈），不影响对应关系。
+ */
+const conclusionPositions: Record<CausalNodeId, [number, number, number]> = {
+  decision: [-2, 1, 0],
+  task: [-2.15, -0.9, 0],
+  factors: [-0.85, 1.62, 0],
+  process: [0.85, 1.55, 0],
+  results: [2.05, 0.85, 0],
+  governance: [2.1, -0.95, 0],
+}
+
+/** 相邻节点的点亮间隔（毫秒）。6 个节点约 0.85 秒走完，避免拖累滚动。 */
+const conclusionStagger = 150
+
+/**
+ * 结论章的星图：节点与总结表的 6 个环节一一对应，但只负责收束感。
+ *
+ * 这里刻意**不绑定任何指针或键盘事件**——高亮只由总结表的 hover / focus 单向驱动。
+ * 反过来做，装饰层就会获得操作语义，星图会变成第二个导航。
+ */
+function ConclusionNetwork({ focusIndex }: { focusIndex: number | null }) {
   const group = useRef<THREE.Group>(null)
   const targetScale = useMemo(() => new THREE.Vector3(1, 1, 1), [])
-  const strength = augmentation / 100
-  const nodes: [number, number, number][] = [[-2, 1, 0], [-2.15, -0.9, 0], [-0.8, 1.65, 0], [0.85, 1.55, 0], [2.05, 0.8, 0], [2.1, -1, 0], [0.7, -1.55, 0], [-0.85, -1.6, 0]]
+  const invalidate = useThree((state) => state.invalidate)
+  // 减少动效下直接全亮：frameloop 会切到 demand，逐帧累积的渐变只会停在半亮。
+  const [litCount, setLitCount] = useState(reducedMotion ? causalNodes.length : 0)
+  const fullyLit = litCount >= causalNodes.length
+
+  useEffect(() => {
+    if (reducedMotion) return
+    let index = 0
+    const timer = window.setInterval(() => {
+      index += 1
+      setLitCount(index)
+      if (index >= causalNodes.length) window.clearInterval(timer)
+    }, conclusionStagger)
+    return () => window.clearInterval(timer)
+  }, [])
+
+  // demand 模式下焦点变化不一定触发重绘，这里显式补一帧，保证键盘/指针高亮都能看见。
+  useEffect(() => { invalidate() }, [invalidate, focusIndex])
+
   useFrame((state, delta) => {
     if (!group.current) return
-    group.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.22) * 0.08 * strength
+    group.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.22) * 0.08
     group.current.scale.lerp(targetScale, 1 - Math.exp(-4 * delta))
   })
+
   return (
     <group ref={group} position={[0, 0.2, -0.65]}>
-      {nodes.map((position, index) => {
-        const active = index / (nodes.length - 1) <= 0.28 + strength * 0.72
+      {causalNodes.map((node, index) => {
+        const position = conclusionPositions[node.id]
+        const focused = focusIndex === index
+        const active = index < litCount || focused
         return (
-          <group key={index}>
-            <Line points={[[0, 0, 0], position]} color={active ? orange : neutral} transparent opacity={active ? 0.18 + strength * 0.38 : 0.07} lineWidth={0.7} />
-            <mesh position={position}><sphereGeometry args={[active ? 0.095 : 0.055, 14, 14]} /><meshBasicMaterial color={active ? orangeBright : '#596167'} transparent opacity={active ? 0.88 : 0.28} /></mesh>
+          <group key={node.id}>
+            <Line points={[[0, 0, 0], position]} color={active ? orange : neutral} transparent opacity={active ? 0.2 + ((index + 1) / causalNodes.length) * 0.36 : 0.07} lineWidth={focused ? 1.5 : 0.7} />
+            <mesh position={position}>
+              <sphereGeometry args={[focused ? 0.14 : active ? 0.095 : 0.055, 14, 14]} />
+              <meshBasicMaterial color={active ? orangeBright : '#596167'} transparent opacity={active ? 0.88 : 0.28} />
+            </mesh>
+            {focused && <mesh position={position} rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[0.27, 0.009, 8, 56]} />
+              <meshBasicMaterial color={orangeBright} transparent opacity={0.85} />
+            </mesh>}
           </group>
         )
       })}
+      {fullyLit && <Sparkles count={26} scale={[5.4, 3.8, 1.6]} size={1.9} speed={0.3} color={orangeBright} opacity={0.72} />}
     </group>
   )
 }
@@ -267,7 +324,7 @@ function Scene(props: SceneProps) {
       {chapterId === 'industry' && <IndustryGalaxy selected={props.selectedIndustry} />}
       {chapterId === 'lab' && <LabOrbit productivity={props.productivity} />}
       {chapterId === 'cost' && <RiskField mode={props.riskMode} />}
-      {chapterId === 'conclusion' && <ConclusionNetwork augmentation={props.augmentation} />}
+      {chapterId === 'conclusion' && <ConclusionNetwork focusIndex={props.focusIndex} />}
       <Sparkles count={width < 768 ? 44 : 110} scale={[9, 5, 3]} size={1.05} speed={0.1} color="#b7bec3" opacity={0.18} />
     </>
   )
@@ -275,11 +332,13 @@ function Scene(props: SceneProps) {
 
 export function PersistentScene(props: SceneProps) {
   const quality = new URLSearchParams(window.location.search).get('quality')
-  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const dpr: [number, number] = quality === 'high' ? [1.5, 2] : quality === 'low' ? [0.75, 1] : [1, 1.5]
   return (
     <div className="scene" aria-hidden="true">
-      <Canvas camera={{ position: [0, 0, 6], fov: 42 }} dpr={dpr} frameloop={reducedMotion ? 'demand' : 'always'} gl={{ antialias: quality !== 'low', alpha: true, powerPreference: 'high-performance' }}>
+      {/* R3F 会在自己的容器上写死 `pointer-events: auto`，把外层 .scene 的 none 顶掉，
+          于是整块 1440×900 的透明画布会在空白处吃掉指针事件。星图不承担任何操作语义，
+          所以这里显式按回去；顺带让「星图侧无交互」从约定变成 DOM 事实。 */}
+      <Canvas camera={{ position: [0, 0, 6], fov: 42 }} dpr={dpr} style={{ pointerEvents: 'none' }} frameloop={reducedMotion ? 'demand' : 'always'} gl={{ antialias: quality !== 'low', alpha: true, powerPreference: 'high-performance' }}>
         <Scene {...props} />
       </Canvas>
     </div>
