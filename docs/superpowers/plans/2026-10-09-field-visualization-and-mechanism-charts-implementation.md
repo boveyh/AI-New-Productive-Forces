@@ -463,3 +463,48 @@ npm run check:data
 | 田地和阈值图重复演示同一个旋钮 | `accuracy` 在田地内固定（引擎 0.92 / 流程 0.85），只在阈值图里可调，见 §2.4 |
 | 章节数变化打乱 3D 场景与脉冲索引 | 阶段 0.2 先完成 id 化改造，再动章节数 |
 | 三张图让页面变长、节奏变拖 | 每张图高度不超过一屏的 60%，且都挂在已有章节的现有留白处 |
+
+## 7. 验收记录（2026-10-09）
+
+### 7.1 任务 8.1 工程门槛 —— 通过
+
+| 命令 | 结果 |
+| --- | --- |
+| `npm run test` | 9 个文件 / 62 个用例全部通过（新增 `field.test.ts` 8 例、`threshold.test.ts` 4 例、`productivity.test.ts` +4 例） |
+| `npm run lint` | 无告警、无错误 |
+| `npm run check:data` | `Validated 13 evidence entries and 4 adoption scenes.` |
+| `npm run build` | `tsc -b` 无类型错误，`vite build` 成功，5139 个模块；仅有 Three.js 场景分块 >500 kB 的既有提示，非失败 |
+
+### 7.2 任务 8.2 体验门槛 —— 通过
+
+**375px 逐章检查。** 由于 Windows 下无头 Chrome 的真实窗口宽度被系统钳制在约 500px，`--window-size=375` 无法生效，改为把应用嵌入 375px 宽的 iframe，使媒体查询针对真实窄视口求值，再读取 `scrollWidth / clientWidth` 与各图表包围盒。八章结果：
+
+| 章节 | 页面级横向溢出 | 新增图表包围盒 |
+| --- | --- | --- |
+| engine | 无 | `.field-view` 324×703、`.field-metrics` 324×211 |
+| adoption | 无 | —（工具条与时间轴各自横滚） |
+| factors | 无 | — |
+| process | 无 | `.field-view` 290×709、`.process-compare` 290×1572 |
+| industry | 无 | `.mechanism-chart` 宽 324 |
+| lab | 无 | `.mechanism-chart` 宽 324 |
+| cost | 无 | `.mechanism-chart` 宽 324 |
+| conclusion | 无 | — |
+
+所有超出视口的元素都落在既有横滚轨道内（`adoption-toolbar`、`adoption-chart`、`theater-track`、`preset-bar`、`.segmented`、`domain-paths`），这些轨道在 `max-width: 767px` 下均为 `overflow-x: auto`，属预期交互而非布局破损。
+
+**减少动态效果。** 用 `--force-prefers-reduced-motion` 对照验证：正常模式下点火后 `.field-scan` 计算样式为 `inline`，减少动态效果下为 `none`，即扫描线被隐藏、田地直接呈现静态终态。
+
+**键盘可达性。** 全站源码无任何 `tabIndex` 覆写；三态切换、流程切换与四个预设均为原生 `<button type="button">`，配合 `aria-pressed` / `role="group" aria-label`；`styles.css` 第 23 行提供全局 `:focus-visible` 焦点环。
+
+**防误读与旋钮归属。** 「场景模拟」在源码中有 2 处（`FieldView.tsx:56`、`MechanismCharts.tsx:42`），其中田地组件在引擎章与流程章各实例化一次，故渲染后 DOM 中出现 3 次；「厂商披露 · 有限证据」1 处、「不作换算」1 处；`相当于` / `折合` / `约为` 出现 0 次。`accuracy` 只作为 `FieldView` 的入参由外层传入（引擎 0.92 / 流程 0.85），组件内没有修改它的控件，唯一可调位置是阈值图的分段控件；田地视图内可见「教学假设」说明行（`FieldView.tsx:96`）。
+
+### 7.3 任务 8.3 部署门槛 —— 通过
+
+- `vite.config.ts` 基础路径为 `/AI-New-Productive-Forces/`，构建产物 `dist/index.html` 中的 JS/CSS 引用均带该前缀；
+- 部署工作流触发分支为 `main`，使用 Node 24、`npm ci`、`npm run build`，与本地门槛一致；
+- 线上走查：见本次推送后 `https://boveyh.github.io/AI-New-Productive-Forces/` 的 Actions 运行结果。
+
+### 7.4 与计划的偏差
+
+- **阈值图横轴由「准确率」改为「判定阈值」**，准确率降级为分段控件。原因：以准确率为横轴时两条误差曲线不会相交，无法表达「此消彼长」；改为阈值后出现唯一交点，才支撑「这里需要人工复核」的结论。相应把 `threshold.ts` 的评分函数改为：低置信格子按 `confidence / (1 - accuracy)` 均匀铺开得分，高置信格子取真实值，使两类误差曲线在阈值 0.5 附近形成单交点。
+- 计划 §5 的第 10 项为「验收」提交；验收本身不产生代码差异，故其内容以本节记录的形式落地。
