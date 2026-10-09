@@ -6,6 +6,7 @@ import { AdoptionStory } from './components/AdoptionStory'
 import { EvidenceTheater } from './components/EvidenceTheater'
 import { FieldView } from './components/FieldView'
 import { IndustryGraph } from './components/IndustryGraph'
+import { HerbicideSavingChart } from './components/MechanismCharts'
 import { DecisionSequence, FactorMachine, GovernanceRing, ProcessCircuit, type FactorFault } from './components/KnowledgeMechanics'
 import { CausalRail, FinalExpansion, RangeInstrument, StoryBridge, StorySpine } from './components/StorySystem'
 import ledgerJson from './data/data-ledger.json'
@@ -229,6 +230,7 @@ export function App() {
               return <a key={signal.id} href={entry.sourceUrl} target="_blank" rel="noreferrer"><strong>{signal.value}</strong><span>{signal.label}</span><small>{entry.year} · {entry.geography}</small></a>
             })}
           </div>
+          <HerbicideSavingChart />
           <EvidenceTheater active={activeCase} onSelect={setActiveCase} />
           <IndustryGraph selected={selectedIndustry} onSelect={setSelectedIndustry} onSelectCase={setActiveCase} />
         </section>
