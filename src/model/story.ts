@@ -18,14 +18,28 @@ export const causalNodes: CausalNode[] = [
   { id: 'governance', label: '新治理', target: 'cost', proof: '判断传播越快，错误、能源和责任也越需要被重新约束。' },
 ]
 
-export const storyBridges = [
-  { id: 'decision-task', nodeId: 'decision' as const, conclusion: '一次正确判断还不是生产力，它必须能够被稳定复制。', question: '当判断开始复制，为什么有些企业先用起来，有些仍停在原地？', start: 0, end: 1 },
-  { id: 'task-factors', nodeId: 'task' as const, conclusion: '买到AI能力，不等于获得生产力。', question: '数据、算力和算法中，哪一项会先成为瓶颈？', start: 1, end: 2 },
-  { id: 'factors-process', nodeId: 'factors' as const, conclusion: '要素咬合只产生能力，能力还必须进入任务。', question: 'AI放在流程的哪个位置，才会减少等待而不是增加返工？', start: 2, end: 3 },
-  { id: 'process-results', nodeId: 'process' as const, conclusion: '流程变化只有转化为结果，才称得上生产力。', question: '成本、速度、质量和新任务，分别留下了什么证据？', start: 3, end: 4 },
-  { id: 'results-lab', nodeId: 'results' as const, conclusion: '局部案例可以成功，但规模化依赖组织条件互补。', question: '投入继续增加时，哪块短板会把收益变成摩擦？', start: 4, end: 5 },
-  { id: 'lab-governance', nodeId: 'results' as const, conclusion: '规模扩大了收益，也同步扩大错误和能源需求。', question: '系统跑得更快时，怎样限制错误能够传播多远？', start: 5, end: 6 },
-  { id: 'governance-conclusion', nodeId: 'governance' as const, conclusion: '治理不是生产力的反面，而是它能够持续的条件。', question: '当可复制判断交给AI，哪些判断必须明确留给人？', start: 6, end: 7 },
+export type StoryBridgeKind = 'morph' | 'relay' | 'overlay' | 'reveal'
+
+export type StoryBridgeEntry = {
+  id: string
+  nodeId: CausalNodeId
+  kind: StoryBridgeKind
+  layout: string
+  action: string
+  conclusion: string
+  question?: string
+  start: number
+  end: number
+}
+
+export const storyBridges: StoryBridgeEntry[] = [
+  { id: 'decision-task', nodeId: 'decision', kind: 'morph', layout: 'morph', action: '形态重组 · 田间判断点重组成采用率数据点', conclusion: '一次正确判断还不是生产力，它必须能够被稳定复制。', question: '当判断开始复制，为什么有些企业先用起来，有些仍停在原地？', start: 0, end: 1 },
+  { id: 'task-factors', nodeId: 'task', kind: 'relay', layout: 'relay', action: '对象接力 · 采用率数据点拆为三路要素信号', conclusion: '买到AI能力，不等于获得生产力。', start: 1, end: 2 },
+  { id: 'factors-process', nodeId: 'factors', kind: 'relay', layout: 'relay', action: '对象接力 · 故障路径继续延伸为流程电路', conclusion: '要素咬合只产生能力，能力还必须进入任务。', question: 'AI放在流程的哪个位置，才会减少等待而不是增加返工？', start: 2, end: 3 },
+  { id: 'process-results', nodeId: 'process', kind: 'overlay', layout: 'overlay', action: '前后叠影 · 旧流程与新流程重叠比较', conclusion: '流程变化只有转化为结果，才称得上生产力。', start: 3, end: 4 },
+  { id: 'results-lab', nodeId: 'results', kind: 'reveal', layout: 'reveal-edge', action: '约束显影 · 收益扩大，摩擦从背景进入前景', conclusion: '局部案例可以成功，但规模化依赖组织条件互补。', question: '投入继续增加时，哪块短板会把收益变成摩擦？', start: 4, end: 5 },
+  { id: 'lab-governance', nodeId: 'results', kind: 'reveal', layout: 'reveal-floor', action: '约束显影 · 错误与能源需求同步放大', conclusion: '规模扩大了收益，也同步扩大错误和能源需求。', start: 5, end: 6 },
+  { id: 'governance-conclusion', nodeId: 'governance', kind: 'reveal', layout: 'reveal-frame', action: '约束显影 · 把不可转移的责任固定下来', conclusion: '治理不是生产力的反面，而是它能够持续的条件。', start: 6, end: 7 },
 ]
 
 export const domainPaths = [

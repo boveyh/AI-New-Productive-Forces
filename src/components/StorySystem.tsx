@@ -1,6 +1,6 @@
 import { ArrowDown, ArrowRight } from '@phosphor-icons/react'
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
-import { causalNodes, domainPaths, pulseGeometry, pulsePathId, storyBridges, type CausalNodeId } from '../model/story'
+import { causalNodes, domainPaths, pulseGeometry, pulsePathId, storyBridges, type CausalNodeId, type StoryBridgeEntry } from '../model/story'
 import { resolveSliderState, sliderThresholds, type SliderKind } from '../model/slider-state'
 
 export function CausalRail({ activeId }: { activeId: CausalNodeId }) {
@@ -29,13 +29,46 @@ export function StorySpine() {
   </svg>
 }
 
+function BridgeVisual({ bridge }: { bridge: StoryBridgeEntry }) {
+  if (bridge.kind === 'morph') return <svg className="bridge-visual" viewBox="0 0 160 72" aria-hidden="true">
+    {[0, 1, 2, 3].map((index) => <circle key={`old-${index}`} className="bridge-unit-old" cx={12 + index * 6} cy={56 - index * 5} r="3" />)}
+    <path className="bridge-connector" d="M40 42 C66 40 76 26 98 24" />
+    {[0, 1, 2, 3].map((index) => <circle key={`new-${index}`} className="bridge-unit-new" cx={104 + index * 14} cy={24 + (index % 2) * 16} r="3" />)}
+  </svg>
+
+  if (bridge.kind === 'relay') return <svg className="bridge-visual" viewBox="0 0 160 72" aria-hidden="true">
+    <path className="bridge-track" d="M14 36 H146" />
+    <circle className="bridge-handoff" cx="56" cy="36" r="7" />
+    <circle className="bridge-token" cx="112" cy="36" r="4" />
+    <path className="bridge-connector" d="M64 36 H104" />
+  </svg>
+
+  if (bridge.kind === 'overlay') return <svg className="bridge-visual" viewBox="0 0 160 72" aria-hidden="true">
+    <path className="bridge-path-old" d="M14 54 H60 C76 54 78 24 94 24 H146" />
+    <path className="bridge-path-new" d="M14 54 H60 C76 54 78 24 94 24 H146" />
+  </svg>
+
+  return <svg className="bridge-visual" viewBox="0 0 160 72" aria-hidden="true">
+    <path className="bridge-track" d="M14 60 H146" />
+    <path className="bridge-constraint" d="M30 60 L70 22 H120" />
+    <path className="bridge-constraint-bar" d="M70 22 V60" />
+  </svg>
+}
+
 export function StoryBridge({ id }: { id: string }) {
   const bridge = storyBridges.find((item) => item.id === id)
   if (!bridge) return null
-  return <section className="story-bridge" data-node-id={bridge.nodeId} data-pulse-path-id={pulsePathId}>
+  return <section className={`story-bridge bridge-${bridge.kind} bridge-${bridge.layout}`} data-node-id={bridge.nodeId} data-pulse-path-id={pulsePathId}>
     <div className="bridge-marker"><span /></div>
-    <div className="bridge-desktop"><p>{bridge.conclusion}</p><strong>{bridge.question}</strong></div>
-    <details><summary>{bridge.question}<ArrowDown /></summary><p>{bridge.conclusion}</p></details>
+    <div className="bridge-desktop">
+      <BridgeVisual bridge={bridge} />
+      <div className="bridge-copy">
+        <span className="bridge-action">{bridge.action}</span>
+        <p>{bridge.conclusion}</p>
+        {bridge.question && <strong>{bridge.question}</strong>}
+      </div>
+    </div>
+    <details><summary>{bridge.question ?? bridge.action}<ArrowDown /></summary><p>{bridge.conclusion}</p></details>
   </section>
 }
 
