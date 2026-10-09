@@ -2,12 +2,13 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Line, Sparkles } from '@react-three/drei'
 import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
+import type { ChapterId } from '../model/story'
 
 type ProcessMode = '传统流程' | 'AI辅助' | '人机协同'
 type RiskMode = '无治理扩张' | '负责任采用'
 
 type SceneProps = {
-  activeChapter: number
+  chapterId: ChapterId
   ignited: boolean
   productivity: number
   processMode: ProcessMode
@@ -20,7 +21,18 @@ const orange = '#f26a2e'
 const orangeBright = '#ff895a'
 const neutral = '#a9b0b5'
 
-function DecisionPulse({ activeChapter, ignited, productivity }: Pick<SceneProps, 'activeChapter' | 'ignited' | 'productivity'>) {
+const pulseSlot: Record<ChapterId, number> = {
+  engine: 0,
+  adoption: 0,
+  factors: 1,
+  process: 1,
+  industry: 2,
+  lab: 3,
+  cost: 4,
+  conclusion: 5,
+}
+
+function DecisionPulse({ chapterId, ignited, productivity }: Pick<SceneProps, 'chapterId' | 'ignited' | 'productivity'>) {
   const group = useRef<THREE.Group>(null)
   const core = useRef<THREE.Mesh>(null)
   const coreMaterial = useRef<THREE.MeshStandardMaterial>(null)
@@ -46,7 +58,8 @@ function DecisionPulse({ activeChapter, ignited, productivity }: Pick<SceneProps
 
   useFrame((state, delta) => {
     if (!group.current || !core.current || !ring.current || !outerRing.current) return
-    const target = positions[Math.min(activeChapter, positions.length - 1)]
+    const slot = Math.min(pulseSlot[chapterId], positions.length - 1)
+    const target = positions[slot]
     group.current.position.lerp(target, 1 - Math.exp(-4.5 * delta))
     group.current.rotation.y += delta * (ignited ? 0.42 : 0.1)
     group.current.rotation.z = Math.sin(state.clock.elapsedTime * 0.5) * 0.12
@@ -59,14 +72,14 @@ function DecisionPulse({ activeChapter, ignited, productivity }: Pick<SceneProps
       [0.82 + energy * 0.28, 0.82 + energy * 0.28, 0.82 + energy * 0.28],
       [0.8, 1.12, 0.8],
       [0.9, 0.9, 0.9],
-    ][Math.min(activeChapter, 5)]
+    ][slot]
     targetScale.set(shapes[0] * pulse, shapes[1] * pulse, shapes[2] * pulse)
     core.current.scale.lerp(targetScale, 1 - Math.exp(-5 * delta))
 
-    const ringTarget = activeChapter === 1 ? 1.4 : activeChapter === 2 ? 0.82 : 1
+    const ringTarget = chapterId === 'process' ? 1.4 : chapterId === 'industry' ? 0.82 : 1
     ring.current.scale.lerp(targetScale.setScalar(ringTarget), 1 - Math.exp(-4 * delta))
     ring.current.rotation.x += delta * (0.22 + energy * 0.38)
-    outerRing.current.rotation.y -= delta * (activeChapter === 4 ? 0.9 : 0.18)
+    outerRing.current.rotation.y -= delta * (chapterId === 'cost' ? 0.9 : 0.18)
     if (coreMaterial.current) coreMaterial.current.emissiveIntensity = THREE.MathUtils.damp(coreMaterial.current.emissiveIntensity, ignited ? 2.7 + energy : 1.1, 4, delta)
   })
 
@@ -243,17 +256,18 @@ function ConclusionNetwork({ augmentation }: { augmentation: number }) {
 
 function Scene(props: SceneProps) {
   const width = useThree((state) => state.size.width)
+  const chapterId = props.chapterId
   return (
     <>
       <ambientLight intensity={0.38} />
       <pointLight position={[2, 3, 4]} color="#ffb392" intensity={18} />
-      <DecisionPulse activeChapter={props.activeChapter} ignited={props.ignited} productivity={props.productivity} />
-      {props.activeChapter === 0 && <FactorStreams ignited={props.ignited} />}
-      {props.activeChapter === 1 && <ProcessField mode={props.processMode} />}
-      {props.activeChapter === 2 && <IndustryGalaxy selected={props.selectedIndustry} />}
-      {props.activeChapter === 3 && <LabOrbit productivity={props.productivity} />}
-      {props.activeChapter === 4 && <RiskField mode={props.riskMode} />}
-      {props.activeChapter === 5 && <ConclusionNetwork augmentation={props.augmentation} />}
+      <DecisionPulse chapterId={chapterId} ignited={props.ignited} productivity={props.productivity} />
+      {(chapterId === 'engine' || chapterId === 'adoption' || chapterId === 'factors') && <FactorStreams ignited={props.ignited} />}
+      {chapterId === 'process' && <ProcessField mode={props.processMode} />}
+      {chapterId === 'industry' && <IndustryGalaxy selected={props.selectedIndustry} />}
+      {chapterId === 'lab' && <LabOrbit productivity={props.productivity} />}
+      {chapterId === 'cost' && <RiskField mode={props.riskMode} />}
+      {chapterId === 'conclusion' && <ConclusionNetwork augmentation={props.augmentation} />}
       <Sparkles count={width < 768 ? 44 : 110} scale={[9, 5, 3]} size={1.05} speed={0.1} color="#b7bec3" opacity={0.18} />
     </>
   )

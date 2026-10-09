@@ -2,6 +2,21 @@ export const pulsePathId = 'decision-pulse-path'
 
 export type CausalNodeId = 'decision' | 'task' | 'factors' | 'process' | 'results' | 'governance'
 
+export type ChapterId = 'engine' | 'adoption' | 'factors' | 'process' | 'industry' | 'lab' | 'cost' | 'conclusion'
+
+export const chapterOrder: ChapterId[] = ['engine', 'adoption', 'process', 'industry', 'lab', 'cost', 'conclusion']
+
+export const chapterLabels: Record<ChapterId, string> = {
+  engine: '引擎',
+  adoption: '扩散',
+  factors: '要素',
+  process: '重构',
+  industry: '产业',
+  lab: '实验室',
+  cost: '代价',
+  conclusion: '结论',
+}
+
 export type CausalNode = {
   id: CausalNodeId
   label: string

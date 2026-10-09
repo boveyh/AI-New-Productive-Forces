@@ -14,7 +14,7 @@ import { decisionContext } from './model/decision-steps'
 import { labPresets, largestChangeKey, matchPreset, type LabPreset } from './model/presets'
 import { evaluateProductivity, type ProductivityInputs } from './model/productivity'
 import { resolveSliderState } from './model/slider-state'
-import { causalNodes, type CausalNodeId } from './model/story'
+import { causalNodes, chapterLabels, chapterOrder, type CausalNodeId } from './model/story'
 
 const PersistentScene = lazy(() =>
   import('./scene/PersistentScene').then((module) => ({ default: module.PersistentScene })),
@@ -23,8 +23,8 @@ const PersistentScene = lazy(() =>
 gsap.registerPlugin(ScrollTrigger)
 
 const ledger = ledgerJson as LedgerEntry[]
-const chapters = ['引擎', '扩散', '重构', '产业', '实验室', '代价', '结论']
-const chapterIds = ['engine', 'adoption', 'process', 'industry', 'lab', 'cost', 'conclusion']
+const chapterIds = chapterOrder
+const chapters = chapterOrder.map((id) => chapterLabels[id])
 
 const macroSignals = [
   { id: 'miit-ai-enterprises-4500', value: '4,500+', label: '中国AI企业' },
@@ -122,7 +122,7 @@ export function App() {
     <div className="app">
       <Suspense fallback={<div className="scene scene-fallback" aria-hidden="true" />}>
         <PersistentScene
-          activeChapter={Math.max(0, activeChapter - 1)}
+          chapterId={chapterIds[Math.min(activeChapter, chapterIds.length - 1)]}
           ignited={ignited}
           productivity={result.index}
           processMode={processMode}
