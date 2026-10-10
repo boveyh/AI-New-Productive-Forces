@@ -159,9 +159,11 @@ export function App() {
     if (industryIndex >= 0) setSelectedIndustry(industryIndex)
   }, [])
 
+  // 四步判断播完后，落点应该是紧随其后的整田模拟，而不是下一章 ——
+  // 那块模拟田才是「启动」这个动作真正点亮的东西，跳过它等于把后半段演示扔掉了。
   const handleDecisionComplete = useCallback(() => {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    document.querySelector('#adoption')?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' })
+    document.querySelector('#field-sim')?.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' })
   }, [])
 
   return (
@@ -206,7 +208,7 @@ export function App() {
             </button>
           </div>
           <DecisionSequence active={ignited} onComplete={handleDecisionComplete} />
-          <div className="engine-field reveal">
+          <div id="field-sim" className="engine-field reveal">
             <p className="engine-field-lead">把镜头从一株拉到整块田：同一个判断被复制到每一个喷嘴，投入的变化才第一次可见。</p>
             <FieldView mode={heroSpray} accuracy={0.92} animated={ignited} onModeChange={setHeroSpray} />
           </div>
