@@ -9,6 +9,7 @@
     "build": "npm run check:data && tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
+    "smoke": "node scripts/smoke.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
