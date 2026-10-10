@@ -1,5 +1,42 @@
 import { ArrowRight } from '@phosphor-icons/react'
+import { useCallback, useRef, useState } from 'react'
+import { buildShareCardSvg, SHARE_CARD_HEIGHT, SHARE_CARD_WIDTH } from '../model/share-card'
 import { closingChoice, closingTakeaways, summaryRows } from '../model/summary'
+
+const SHARE_URL = 'https://boveyh.github.io/AI-New-Productive-Forces/'
+
+/** SVG 字符串 → PNG Blob。全链路无外部资源，画布不会被污染。 */
+async function rasterizeShareCard(svg: string): Promise<Blob> {
+  const blobUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }))
+  try {
+    const image = new Image()
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve()
+      image.onerror = () => reject(new Error('分享卡渲染失败'))
+      image.src = blobUrl
+    })
+    const canvas = document.createElement('canvas')
+    canvas.width = SHARE_CARD_WIDTH
+    canvas.height = SHARE_CARD_HEIGHT
+    const context = canvas.getContext('2d')
+    if (!context) throw new Error('当前浏览器不支持画布')
+    context.drawImage(image, 0, 0, SHARE_CARD_WIDTH, SHARE_CARD_HEIGHT)
+    const png = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+    if (!png) throw new Error('分享卡导出失败')
+    return png
+  } finally {
+    URL.revokeObjectURL(blobUrl)
+  }
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  anchor.click()
+  URL.revokeObjectURL(url)
+}
 
 /**
  * 结尾总结：一张表 + 三条收束结论。
@@ -19,6 +56,41 @@ export function ConclusionSummary({
   focusIndex: number | null
   onFocusStage: (index: number | null) => void
 }) {
+  // 分享卡的第三条随 augmentation 变化，和页面上的「选择」保持同一份文案。
+  const [shareState, setShareState] = useState<'idle' | 'busy' | 'copied' | 'saved'>('idle')
+  const resetTimer = useRef<number | null>(null)
+
+  const exportShareCard = useCallback(async (mode: 'copy' | 'download') => {
+    setShareState('busy')
+    try {
+      const png = await rasterizeShareCard(buildShareCardSvg({
+        takeaways: [
+          { label: '机制', text: closingTakeaways.mechanism },
+          { label: '边界', text: closingTakeaways.boundary },
+          { label: '选择', text: closingChoice(augmentation) },
+        ],
+        url: SHARE_URL,
+      }))
+      if (mode === 'download') {
+        downloadBlob(png, 'AI生产力引擎-结论.png')
+        setShareState('saved')
+      } else {
+        try {
+          // 剪贴板在非安全上下文（http）或旧浏览器上不可用，失败了就退回下载。
+          await navigator.clipboard.write([new ClipboardItem({ 'image/png': png })])
+          setShareState('copied')
+        } catch {
+          downloadBlob(png, 'AI生产力引擎-结论.png')
+          setShareState('saved')
+        }
+      }
+    } catch {
+      setShareState('idle')
+    }
+    if (resetTimer.current) window.clearTimeout(resetTimer.current)
+    resetTimer.current = window.setTimeout(() => setShareState('idle'), 2400)
+  }, [augmentation])
+
   return <div className="summary reveal">
     <table className="summary-table">
       <caption>这些行不按章节排列，而是按因果环节：每个环节被复制了什么判断，又留下了什么约束。台账锚点只在该环节确有对应证据时给出，悬停可看证据本身的口径。</caption>
@@ -65,6 +137,15 @@ export function ConclusionSummary({
       <blockquote><span>机制</span>{closingTakeaways.mechanism}</blockquote>
       <blockquote><span>边界</span>{closingTakeaways.boundary}</blockquote>
       <blockquote className="is-current"><span>选择</span>{closingChoice(augmentation)}</blockquote>
+    </div>
+
+    <div className="share-actions" role="group" aria-label="把结论带走">
+      <button type="button" onClick={() => exportShareCard('copy')} disabled={shareState === 'busy'}>
+        {shareState === 'copied' ? '已复制到剪贴板' : shareState === 'busy' ? '生成中…' : '复制为图片'}
+      </button>
+      <button type="button" onClick={() => exportShareCard('download')} disabled={shareState === 'busy'}>
+        {shareState === 'saved' ? '已保存' : '下载 PNG'}
+      </button>
     </div>
   </div>
 }
